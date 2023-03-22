@@ -1,0 +1,35 @@
+name: ResourceVaults
+version: 1.2
+main: com.thepaperraven.ai.ResourceVaults
+api-version: 1.18
+description: A plugin that allows players to have multiple virtual vaults.
+authors:
+  - ChatGPT
+  - KiloBytez
+depend: [PlaceholderAPI,MythicLib]
+softdepend: [MMOCore, MMOItems,ProtocolLib, MythicMobs, Vault]
+
+commands:
+  rsvaults:
+    description: Access the ResourceVaults plugin.
+    usage: /<command> <subcommand> [arguments]
+    aliases: [rvaults]
+    permission: rs.command
+    children:
+      open:
+        description: Open one of your virtual vaults.
+        usage: /<command> open <vault-index>
+        permission: rs.command.open
+  myvaults:
+    description: Open the ResourceVaults menu.
+    usage: /myvaults
+    permission: rs.command.myvaults
+    aliases: [Vaults]
+permissions:
+  rs.commands:
+    description: "Base command permission"
+    default: true
+    children:
+      - "create"
+      - "open"
+      - "delete"
