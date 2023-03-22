@@ -2,11 +2,15 @@ package com.thepaperraven.ai.utils;
 
 import com.thepaperraven.ai.PlayerData;
 import com.thepaperraven.ai.ResourceVaults;
+import com.thepaperraven.ai.SerializablePlayerData;
 import com.thepaperraven.ai.Vault;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Sign;
+import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -58,7 +62,7 @@ public class VaultUtils {
     }
 
     public static void removeItemsFrom(Player player, Material type, int amount) {
-        PlayerData playerData = ResourceVaults.getPlayer(player);
+        SerializablePlayerData playerData = ResourceVaults.getPlayer(player);
 
         Map<Integer, Vault> map = playerData.getDataMap();
         if (map.isEmpty()) {
@@ -90,5 +94,40 @@ public class VaultUtils {
                 }
             }
         }
+    }public static Vault getVault(Player player, int index, Location chestLocation) {
+        Block block = chestLocation.getBlock();
+        if (!(block.getState() instanceof Chest || block.getState() instanceof DoubleChest)) {
+            return null;
+        }
+        BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+        for (BlockFace face : faces) {
+            Block relative = block.getRelative(face);
+            if (relative.getBlockData() instanceof WallSign || relative.getState() instanceof Sign sign) {
+                Sign sign = (Sign) relative.getState();
+                if (!sign.getLine(1).equals("[RESOURCES]")) {
+                    continue;
+                }
+                Material material = Material.getMaterial(sign.getLine(2));
+                if (material == null) {
+                    material = Material.WHEAT;
+                }
+                String playerName = sign.getLine(3);
+                if (!player.getName().equals(playerName)) {
+                    return null;
+                }
+                PlayerData playerData = ResourceVaults.getPlayerData(player);
+                Map<Integer, Vault> vaults = playerData.getVaults();
+                if (!vaults.containsKey(index)) {
+                    return null;
+                }
+                Vault vault = vaults.get(index);
+                if (vault.getLocation().equals(chestLocation)) {
+                    return vault;
+                } else {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 }

@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,8 +24,9 @@ import java.util.*;
 import static com.thepaperraven.ai.VaultKeys.*;
 
 public class VaultManager {
+    public static int MAX_VAULTS = Integer.MAX_VALUE;
     private final ResourceVaults plugin;
-    private static final Map<UUID, List<Vault>> playerVaults = new HashMap<>();
+
 
     public VaultManager(ResourceVaults plugin) {
         this.plugin = plugin;
@@ -32,7 +34,7 @@ public class VaultManager {
     }
 
     public static Vault getVaultById(int index, Player player) {
-        List<Vault> orDefault = playerVaults.getOrDefault(player.getUniqueId(), new ArrayList<>());
+        Map<Integer,Vault> orDefault = ResourceVaults.getPlayerData(player.getUniqueId()).getVaults();
 
         if (orDefault.isEmpty()){
             return null;
@@ -48,23 +50,20 @@ public class VaultManager {
         return playerVaults.getOrDefault(playerId, new ArrayList<>());
     }
 
-    public void addVault(UUID playerId, Vault vault) {
-        List<Vault> vaults = playerVaults.getOrDefault(playerId, new ArrayList<>());
-        vaults.add(vault);
-        playerVaults.put(playerId, vaults);
+    public void addVault(Player player, Vault vault) {
+        Map<Integer,Vault> playerVaults= ResourceVaults.getPlayerData(player.getUniqueId()).getVaults();
+        playerVaults.put(vault.getIndex(),vault);
     }
 
-    public boolean removeVault(UUID playerId, Vault vault) {
-        List<Vault> vaults = playerVaults.getOrDefault(playerId, new ArrayList<>());
+    public boolean removeVault(Player player, Vault vault) {
+        Map<Integer,Vault> playerVaults= ResourceVaults.getPlayerData(player.getUniqueId()).getVaults();
 
-        if (!vaults.contains(vault)){
-            ResourceVaults.log("PLayer: " + Bukkit.getPlayer(playerId).getName() + " does not have: " + vault.getIndex());
-            return false;
+        if (playerVaults.containsValue(vault)) {
+            playerVaults.remove(vault.getIndex());
+            return true;
         }
 
-        vaults.remove(vault);
-        playerVaults.put(playerId, vaults);
-        return true;
+        return false;
     }
 
     public void loadVaultsFromFile(UUID playerId) {

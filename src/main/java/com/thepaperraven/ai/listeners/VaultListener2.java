@@ -1,7 +1,8 @@
-import com.thepaperraven.ai.PlayerData;
-import com.thepaperraven.ai.ResourceVaults;
-import com.thepaperraven.ai.Vault;
+package com.thepaperraven.ai.listeners;
+
+import com.thepaperraven.ai.*;
 import com.thepaperraven.ai.events.VaultCreateEvent;
+import com.thepaperraven.ai.utils.VaultUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,18 +13,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
 import java.util.UUID;
 
-public class VaultListener implements Listener {
+public class VaultListener2 implements Listener {
 
     private final VaultManager vaultManager;
-    private final PlayerDataManager playerDataManager;
 
-    public VaultListener(VaultManager vaultManager, PlayerDataManager playerDataManager) {
+    public VaultListener2(VaultManager vaultManager) {
         this.vaultManager = vaultManager;
-        this.playerDataManager = playerDataManager;
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -75,8 +75,8 @@ public class VaultListener implements Listener {
             Vault newVault = new Vault(uuid, vaultCreateEvent.getLocation(), vaultCreateEvent.getMaterial(), totalVaults + 1);
             vaultManager.addVault(newVault);
 
-            PlayerData playerData = ResourceVaults.getPlayerData(uuid);
-            playerData.addVault(newVault);
+           PlayerData playerData = ResourceVaults.getPlayerData(uuid);
+           playerData.addVault(newVault);
 
             player.sendMessage("Vault created successfully!");
         } else {

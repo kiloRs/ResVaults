@@ -35,7 +35,7 @@ public class ResourceVaults extends JavaPlugin {
     }
 
     public static PlayerData getPlayerData(UUID uuid) {
-        return new PlayerData(uuid);
+        return new SerializablePlayerData(uuid);
     }
 
     @Override
@@ -85,8 +85,8 @@ public class ResourceVaults extends JavaPlugin {
     }
 
     @NotNull
-    public static PlayerData getPlayer(Player player){
-        return new PlayerData(player.getUniqueId());
+    public static SerializablePlayerData getPlayer(Player player){
+        return new SerializablePlayerData(player.getUniqueId());
     }
 
     @NotNull
@@ -143,12 +143,11 @@ public class ResourceVaults extends JavaPlugin {
         return false;
     }
 
-    @NotNull
     public static PlayerData getPlayerData(Player player){
 
         if (player == null){
             throw new RuntimeException("Player is null! Error with Playerdata!");
         }
-        return new PlayerData(player.getUniqueId());
+        return new SerializablePlayerData(player.getUniqueId());
     }
 }
