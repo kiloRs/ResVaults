@@ -3,18 +3,21 @@ package com.thepaperraven.ai;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
-import org.bukkit.block.Sign;
+import org.bukkit.block.*;
+import org.bukkit.block.data.Attachable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Vault {
 
@@ -126,7 +129,7 @@ public class Vault {
         lines[0] = "[RESOURCES]";
         lines[1] = material.toString();
         lines[2] = owner.getName();
-        lines[3] = locked ? "LOCKED" : "";
+        lines[3] = locked ? ChatColor.RED + "LOCKED" : ChatColor.GREEN + "UNLOCKED";
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -138,17 +141,21 @@ public class Vault {
             }
         }.runTask(ResourceVaults.getPlugin());
     }
-
-    public Sign getSign() {
-        BlockFace[] faces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
-        for (BlockFace face : faces) {
-            Sign sign = getSign(face);
-            if (sign != null) {
-                return sign;
-            }
+    private Sign getSign() {
+        List<BlockFace> sides = new ArrayList<>();
+        sides.add(BlockFace.NORTH);
+        sides.add(BlockFace.EAST);
+        sides.add(BlockFace.SOUTH);
+        sides.add(BlockFace.WEST);
+        for (BlockFace side : sides) {
+            Block block = getChestLocation().getBlock().getRelative(side);
+            if (!(block.getState() instanceof Sign sign)) continue;
+            if (!sign.getLine(0).equalsIgnoreCase("[Resources]")) continue;
+            return sign;
         }
         return null;
     }
+
 
 
 }
