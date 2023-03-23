@@ -136,7 +136,6 @@ public class PlayerData {
                     }
 
                     Vault vault = new Vault(index, location, isDouble, doubleFace, material, creationTime, currentAmount, locked, pdc);
-                    Vault vault = PlayerData.
                     vaults.put(index, vault);
                 }
             }

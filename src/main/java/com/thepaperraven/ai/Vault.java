@@ -6,11 +6,14 @@ import lombok.Setter;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.*;
-import org.bukkit.block.data.Attachable;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
+import org.bukkit.block.Sign;
+import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,17 +22,24 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static com.thepaperraven.ai.VaultKeys.*;
+import static com.thepaperraven.ai.VaultKeys.getIndexKey;
+
 public class Vault {
 
+
+    @Getter
     private final int index;
+    @Getter
     private final Location chestLocation;
+    @Getter
     private final Chest chest;
     @Getter
     @Setter
     private Location doubleChestLocation;
     @Getter
     @Setter
-    private final Material material;
+    private Material material;
     @Getter
     private final Player owner;
     @Getter
@@ -40,7 +50,7 @@ public class Vault {
     private final Inventory inventory;
     @Getter
     @Setter
-    private final boolean isDouble;
+    private boolean isDouble;
 
     @NotNull
     public static Vault getNewVaultInstance(PlayerData data,Location chestLocation, Material material,boolean doubleChest){
@@ -76,22 +86,6 @@ public class Vault {
         this.inventory = ((Chest) chestLocation.getBlock().getState()).getInventory();
         BlockFace face = getSecondChestOrNull();
         this.doubleChestLocation = getSecondChestOrNull()==null?null:chestLocation.getBlock().getRelative(face).getLocation();
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public Location getChestLocation() {
-        return chestLocation;
-    }
-
-    public Material getMaterial() {
-        return material;
-    }
-
-    public Player getOwner() {
-        return owner;
     }
 
     public BlockFace getSecondChestOrNull() {
@@ -156,6 +150,35 @@ public class Vault {
         return null;
     }
 
-
+    public static boolean isVault(Block block) {
+        if (block.getState() instanceof Chest chest) {
+            BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+            for (BlockFace face : faces) {
+                Block relative = block.getRelative(face);
+                if (relative.getState() instanceof Sign sign) {
+                    if (sign.getLine(0).equals("[Resources]")) {
+                        if (chest.getPersistentDataContainer().has(getOwnerKey(), DataType.UUID) &&
+                                chest.getPersistentDataContainer().has(getLocationKey(), DataType.LOCATION) &&
+                                chest.getPersistentDataContainer().has(getMaterialTypeKey(), PersistentDataType.STRING) &&
+                                chest.getPersistentDataContainer().has(getIndexKey(), PersistentDataType.INTEGER)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } else if (block.getState() instanceof Sign sign) {
+            if (sign.getLine(0).equals("[Resources]")) {
+                BlockFace oppositeFace = ((Directional) block.getBlockData()).getFacing().getOppositeFace();
+                Block attachedBlock = block.getRelative(oppositeFace);
+                if (attachedBlock.getState() instanceof Chest chest) {
+                    return chest.getPersistentDataContainer().has(getOwnerKey(), DataType.UUID) &&
+                            chest.getPersistentDataContainer().has(getLocationKey(), DataType.LOCATION) &&
+                            chest.getPersistentDataContainer().has(getMaterialTypeKey(), PersistentDataType.STRING) &&
+                            chest.getPersistentDataContainer().has(getIndexKey(), PersistentDataType.INTEGER);
+                }
+            }
+        }
+        return false;
+    }
 
 }

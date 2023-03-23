@@ -3,6 +3,9 @@ package com.thepaperraven.ai;
 import lombok.Getter;
 import org.bukkit.NamespacedKey;
 
+/**
+ * Contains all the NameSpacedKeys required in the ResourceVaults plugin!
+ */
 public class VaultKeys {
     @Getter
     private static final NamespacedKey backKey= new NamespacedKey(ResourceVaults.getPlugin(), "back_icon");
