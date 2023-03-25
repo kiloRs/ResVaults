@@ -1,6 +1,6 @@
 package com.thepaperraven.config.resources;
 
-import com.thepaperraven.ai.SerializablePlayerData;
+import com.thepaperraven.ai.PlayerData;
 import com.thepaperraven.ai.ResourceVaults;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Material;
@@ -31,7 +31,7 @@ public class Placeholder extends PlaceholderExpansion {
         }
 
         // Get the player's data
-        SerializablePlayerData playerData = ResourceVaults.getPlayerData(player);
+        PlayerData playerData = ResourceVaults.getPlayerData(player);
 
         // Placeholder: %myplugin_total_vaults%
         if (identifier.equals("total_vaults")) {

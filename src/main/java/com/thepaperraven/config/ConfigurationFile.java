@@ -59,5 +59,9 @@ public class ConfigurationFile {
             }
 
         }
+
+    public File getFile() {
+        return this.file;
     }
+}
 

@@ -11,12 +11,14 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -27,26 +29,30 @@ public class ResourceVaults extends JavaPlugin {
 
     @Getter
     private static Plugin plugin;
-    @Getter
-    private static VaultManager vaultManager;
+
 
     public static void log(String s) {
         Logger.getLogger("Minecraft").info("[ResourceVaults]" + s);
     }
 
-    public static PlayerData getPlayerData(UUID uuid) {
-        return new SerializablePlayerData(uuid);
+    public static void error(String error){
+        Logger.getLogger("Minecraft").severe("[ResourceVaults] " + error);
     }
 
     @Override
     public void onEnable() {
         plugin = this;
-        vaultManager = new VaultManager(this);
         //Register commands!
-        getCommand("rsvaults").setExecutor(new RSVaultsCommandExecuter(this));
-        getCommand("myvaults").setExecutor(new MyVaults(this));
+        PluginCommand rsvaults = getCommand("rsvaults");
+        if (rsvaults!=null) {
+            rsvaults.setExecutor(new RSVaultsCommandExecuter(this));
+        }
+        PluginCommand myvaults = getCommand("myvaults");
+        if (myvaults!=null) {
+            myvaults.setExecutor(new MyVaults(this));
+        }
         //Register listeners!
-        getServer().getPluginManager().registerEvents(new VaultListener(vaultManager), this);
+        getServer().getPluginManager().registerEvents(new VaultListener(), this);
         getLogger().info("ResourceVaults plugin enabled!");
 
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")){
@@ -85,11 +91,6 @@ public class ResourceVaults extends JavaPlugin {
     }
 
     @NotNull
-    public static SerializablePlayerData getPlayer(Player player){
-        return new SerializablePlayerData(player.getUniqueId());
-    }
-
-    @NotNull
     public static ConfigurationFile getFileOfPlayer(Player player){
         return new ConfigurationFile(player);
     }
@@ -111,14 +112,14 @@ public class ResourceVaults extends JavaPlugin {
                     List<Player> players = Bukkit.matchPlayer(text);
                     if (!players.isEmpty()){
                         Player player = players.get(0);
-                        List<Vault> vaults = vaultManager.getVaults(player.getUniqueId());
+                        Map<Integer, Vault> vaults = getPlayerData(player).getVaults();
 
                         sender.sendMessage("Vaults of Player: " + player.getName());
-                        for (Vault vault : vaults) {
-                            if (vault == null || !vault.isActive()){
+                        for (Map.Entry<Integer,Vault> vault : vaults.entrySet()) {
+                            if (vault == null){
                                 continue;
                             }
-                            sender.sendMessage("" + vault.getIndex() + " - " + vault.getMaterialType().getKey().getKey() + " - " + vault.getLocation().toBlockLocation() + " - " + vault.getOwnerId().toString());
+                            sender.sendMessage("" + vault.getValue().getIndex() + " - " + vault.getValue().getMaterial().getKey().getKey() + " - " + vault.getValue().getChestLocation().toBlockLocation() + " - " + vault.getValue().getOwnersUUID().toString());
                         }
                     }
                 }
@@ -148,6 +149,6 @@ public class ResourceVaults extends JavaPlugin {
         if (player == null){
             throw new RuntimeException("Player is null! Error with Playerdata!");
         }
-        return new SerializablePlayerData(player.getUniqueId());
+     return new PlayerData(player.getUniqueId());
     }
 }

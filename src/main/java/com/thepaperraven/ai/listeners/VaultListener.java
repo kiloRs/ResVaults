@@ -42,10 +42,8 @@ import static com.thepaperraven.ai.VaultManager.findAttachedChest;
 
 public class VaultListener implements Listener {
 
-    private final VaultManager vaultManager;
+    public VaultListener() {
 
-    public VaultListener(VaultManager vaultManager) {
-        this.vaultManager = vaultManager;
     }
     @EventHandler
     public void onCreateVault(VaultCreateEvent e){
