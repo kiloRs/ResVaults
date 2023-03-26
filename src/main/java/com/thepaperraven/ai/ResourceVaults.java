@@ -2,7 +2,6 @@ package com.thepaperraven.ai;
 
 import com.thepaperraven.ai.commands.MyVaults;
 import com.thepaperraven.ai.commands.RSVaultsCommandExecuter;
-import com.thepaperraven.ai.listeners.VaultListener;
 import com.thepaperraven.config.ConfigurationFile;
 import com.thepaperraven.config.resources.CurrencyPlaceholder;
 import com.thepaperraven.config.resources.Placeholder;
@@ -52,7 +51,7 @@ public class ResourceVaults extends JavaPlugin {
             myvaults.setExecutor(new MyVaults(this));
         }
         //Register listeners!
-        getServer().getPluginManager().registerEvents(new VaultListener(), this);
+        getServer().getPluginManager().registerEvents(new com.thepaperraven.ai.VaultListener(), this);
         getLogger().info("ResourceVaults plugin enabled!");
 
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")){
@@ -119,7 +118,7 @@ public class ResourceVaults extends JavaPlugin {
                             if (vault == null){
                                 continue;
                             }
-                            sender.sendMessage("" + vault.getValue().getIndex() + " - " + vault.getValue().getMaterial().getKey().getKey() + " - " + vault.getValue().getChestLocation().toBlockLocation() + " - " + vault.getValue().getOwnersUUID().toString());
+                            sender.sendMessage("" + vault.getValue().getVaultMetadata().getIndex() + " - " + vault.getValue().getVaultMetadata().getMaterial().getKey().getKey() + " - " + vault.getValue().getChestLocation1().toBlockLocation() + " - " + vault.getValue().getVaultMetadata().getOwner().toString());
                         }
                     }
                 }
@@ -144,11 +143,7 @@ public class ResourceVaults extends JavaPlugin {
         return false;
     }
 
-    public static PlayerData getPlayerData(Player player){
-
-        if (player == null){
-            throw new RuntimeException("Player is null! Error with Playerdata!");
-        }
-     return new PlayerData(player.getUniqueId());
+    public static PlayerData getPlayerDataManager(UUID own){
+        return new PlayerData(own);
     }
 }

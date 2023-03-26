@@ -25,10 +25,6 @@ public class VaultKeys {
     @Getter
     private static final NamespacedKey vaultKey= new NamespacedKey(ResourceVaults.getPlugin(), "vault_create_date");
     @Getter
-    private static final NamespacedKey totalVaultItems = new NamespacedKey(ResourceVaults.getPlugin(), "vault_total_items");
-    @Getter
-    private static final NamespacedKey totalVaults = new NamespacedKey(ResourceVaults.getPlugin(), "vault_total_amount");
-    @Getter
     private static final NamespacedKey locked = new NamespacedKey(ResourceVaults.getPlugin(), "vault_locked");
 
 }
