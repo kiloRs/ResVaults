@@ -23,4 +23,8 @@ public interface VaultInstance{
     static VaultInstance fromConfig(FileConfiguration config, String path) {
         return Vault.fromConfig(config, path);
     }
+
+    public default boolean equals(VaultInstance other){
+        return this.getOwnerUUID().equals(other.getOwnerUUID())&&this.getChestLocation1().toBlockLocation().equals(other.getChestLocation1().toBlockLocation());
+    }
 }

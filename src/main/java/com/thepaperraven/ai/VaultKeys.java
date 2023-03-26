@@ -7,13 +7,25 @@ import org.bukkit.NamespacedKey;
  * Contains all the NameSpacedKeys required in the ResourceVaults plugin!
  */
 public class VaultKeys {
+    /**
+     * Used in the VaultGUI class, a list showing each of the Vaults of a PlayerData. The back key is the back page button's PDC storage key!
+     */
     @Getter
     private static final NamespacedKey backKey= new NamespacedKey(ResourceVaults.getPlugin(), "back_icon");
+    /**
+     * Used in the VaultGUI class, a list showing each of the Vaults of a PlayerData. The back key is the next page button's PDC storage key!
+     */
     @Getter
     private static final NamespacedKey nextKey= new NamespacedKey(ResourceVaults.getPlugin(), "next_icon");
 
+    /**
+     * The owning UUID key of the VaultInstance/Vault classes.
+     */
     @Getter
     private static final NamespacedKey ownerKey= new NamespacedKey(ResourceVaults.getPlugin(), "owner_id");
+    /**
+     * The location key of the VaultInstance/Vault classes.
+     */
     @Getter
     private static final NamespacedKey locationKey= new NamespacedKey(ResourceVaults.getPlugin(), "vault_location");
     @Getter

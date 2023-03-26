@@ -5,15 +5,16 @@ import com.thepaperraven.ai.utils.LocationUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
-import org.bukkit.block.DoubleChest;
-import org.bukkit.block.TileState;
+import org.bukkit.block.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
@@ -25,14 +26,18 @@ import java.util.UUID;
 @Getter
 public class Vault implements VaultInstance {
     private final UUID ownerUUID;
+    private final Chest chest;
+    private final Sign sign;
     private final Location signLocation;
     private final Location chestLocation1;
     private final Location chestLocation2;
+    private final List<Location> blockLocations = new ArrayList<>();
     private final Material allowedMaterial;
     private final PlayerData playerData;
     private boolean isDoubleChest = false;
     private final InventoryHolder holder;
     private final VaultMetadata vaultMetadata;
+    private final Inventory inventory;
 
     /**
      * @param ownerUUID       Owning Player
@@ -57,20 +62,26 @@ public class Vault implements VaultInstance {
         this.playerData = new PlayerData(ownerUUID);
         this.signLocation = signLocation.toBlockLocation();
         this.chestLocation1 = chestLocation1.toBlockLocation();
+        this.blockLocations.add(chestLocation1);
+        this.blockLocations.add(signLocation);
+
         if (chestLocation2 != null) {
             this.chestLocation2 = chestLocation2.toBlockLocation();
             this.isDoubleChest = true;
             this.holder = chestLocation1.toBlockLocation().getBlock().getState() instanceof Chest chest ? chest.getBlockInventory().getHolder() instanceof DoubleChest doubleChest ? doubleChest : chest.getInventory().getHolder() : null;
+            this.blockLocations.add(chestLocation2);
         } else {
             this.chestLocation2 = null;
             this.holder = chestLocation1.toBlockLocation().getBlock().getState() instanceof Chest chest ? chest.getBlockInventory().getHolder() instanceof DoubleChest doubleChest ? doubleChest : chest.getInventory().getHolder() : null;
         }
+        this.inventory = holder.getInventory();
         this.allowedMaterial = allowedMaterial;
         VaultMetadata meta = VaultMetadata.loadFromPDC(chestLocation1.getBlock());
-        this.vaultMetadata = meta == null ? new VaultMetadata(allowedMaterial.getKey().getKey(), ownerUUID, playerData.getIndexOf(this)):meta;
+        this.vaultMetadata = meta == null ? new VaultMetadata(allowedMaterial, ownerUUID, playerData.getIndexOf(this)):meta;
 
-        if (this.holder == null) {
-            throw new RuntimeException("Invalid Holder of Vault: " + playerData.getIndexOf(this));
+        if (new PlayerData(getOwnerUUID()).getVaults().removeIf(vaultInstance -> vaultInstance.getOwnerUUID()==getOwnerUUID()&&getOwnerUUID()!=this.vaultMetadata.getOwnerUUID())) {
+            ResourceVaults.error("Vault was removed from " + Bukkit.getPlayer(getOwnerUUID()).getName() + " because of invalid UUID containing.");
+            return;
         }
 
         this.vaultMetadata.saveToPDC(chestLocation1.getBlock());
@@ -85,15 +96,16 @@ public class Vault implements VaultInstance {
                 && allowedMaterial != null
                 && playerData != null
                 && holder != null
-                && vaultMetadata != null;
+                && vaultMetadata != null
+                && (isDoubleChest && chestLocation2 != null || !isDoubleChest && chestLocation2==null);
     }
     public boolean isActive() {
         List<Block> blocks = new ArrayList<>();
-        Block chest = chestLocation1.getBlock();
-        Block sign = signLocation.getBlock();
+        Block chest = this.getChestLocation1().getBlock();
+        Block sign = this.getSignLocation().getBlock();
         blocks.add(chest);
         blocks.add(sign);
-        if (this.isDoubleChest()) {
+        if (this.isDoubleChest() && chestLocation2 != null) {
             Block relative = chestLocation2.getBlock();
             if (relative.getState() instanceof Chest) {
                 blocks.add(relative);
@@ -106,21 +118,18 @@ public class Vault implements VaultInstance {
                 return false;
             }
             PersistentDataContainer pdc = tileState.getPersistentDataContainer();
-            if (!pdc.has(VaultKeys.getOwnerKey(), PersistentDataType.STRING)) {
+            if (!pdc.has(VaultKeys.getOwnerKey(), DataType.UUID)) {
                 return false;
             }
-            UUID ownerUUID = pdc.get(VaultKeys.getOwnerKey(), DataType.UUID);
-            if (ownerUUID == null){
-                return false;
-            }
-            if (!ownerUUID.equals(vaultMetadata.getOwnerUUID())) {
+            UUID ownerUUID = (pdc.get(VaultKeys.getOwnerKey(), DataType.UUID));
+            if (ownerUUID == null || !ownerUUID.equals(this.ownerUUID)) {
                 return false;
             }
             if (!pdc.has(VaultKeys.getIndexKey(), PersistentDataType.INTEGER)) {
                 return false;
             }
             int vaultIndex = pdc.getOrDefault(VaultKeys.getIndexKey(), PersistentDataType.INTEGER,0);
-            if (vaultIndex != vaultMetadata.getVaultIndex()) {
+            if (vaultIndex != this.vaultMetadata.getVaultIndex()) {
                 return false;
             }
         }
@@ -180,19 +189,34 @@ public class Vault implements VaultInstance {
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(getOwnerUUID()).append(getSignLocation()).append(getChestLocation1()).append(getChestLocation2()).append(getAllowedMaterial()).append(getPlayerData()).toHashCode();
     }
+
+    /**
+     * Gets the contents of the vault.
+     *
+     * @return the contents of the vault as an array of ItemStacks.
+     */
+    public ItemStack[] getContents() {
+        return inventory.getContents();
+    }
 }
 @Getter
 class VaultMetadata{
-    private final String allowedMaterial;
+    private final Material allowedMaterial;
     private final UUID ownerUUID;
     private final int vaultIndex;
 
     public VaultMetadata(Material allowedMaterial, UUID ownerUUID, int vaultIndex) {
-        this.allowedMaterial = allowedMaterial.getKey().getKey();
+        this.allowedMaterial = allowedMaterial;
         this.ownerUUID = ownerUUID;
         this.vaultIndex = vaultIndex;
     }
 
+    public boolean isOwner(Player player){
+        return player.getUniqueId().equals(ownerUUID);
+    }
+    public boolean isMatchingMaterial(ItemStack itemStack){
+        return itemStack.getType()==allowedMaterial;
+    }
     public void saveToPDC(Block block) {
         PersistentDataContainer pdc = block.getState() instanceof TileState tileState? tileState.getPersistentDataContainer():null;
         if (pdc == null){
@@ -200,7 +224,7 @@ class VaultMetadata{
             return;
         }
         pdc.set(VaultKeys.getOwnerKey(), DataType.UUID, ownerUUID);
-        pdc.set(VaultKeys.getMaterialTypeKey(), PersistentDataType.STRING, allowedMaterial);
+        pdc.set(VaultKeys.getMaterialTypeKey(), PersistentDataType.STRING, allowedMaterial.getKey().getKey());
         pdc.set(VaultKeys.getIndexKey(), PersistentDataType.INTEGER, vaultIndex);
     }
 
@@ -210,21 +234,13 @@ class VaultMetadata{
             return null;
         }
         @Nullable UUID owner = pdc.get(VaultKeys.getOwnerKey(), DataType.UUID);
-        Material material = Material.matchMaterial(pdc.get(VaultKeys.getMaterialTypeKey(), PersistentDataType.STRING));
+        Material material = Material.matchMaterial(pdc.getOrDefault(VaultKeys.getMaterialTypeKey(), PersistentDataType.STRING,"WHEAT"));
         Integer index = pdc.get(VaultKeys.getIndexKey(), PersistentDataType.INTEGER);
         if (owner != null && material != null && index != null) {
             return new VaultMetadata(material, owner, index);
         } else {
             return null;
         }
-    }
-
-    public String toJson() {
-        return gson.toJson(this);
-    }
-
-    public static VaultMetadata fromJson(String json) {
-        return gson.fromJson(json, VaultMetadata.class);
     }
 
     @Override
@@ -240,5 +256,8 @@ class VaultMetadata{
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(getAllowedMaterial()).append(getOwnerUUID()).append(getVaultIndex()).toHashCode();
     }
+
+
+    //Extra Methods
 
 }

@@ -111,14 +111,14 @@ public class ResourceVaults extends JavaPlugin {
                     List<Player> players = Bukkit.matchPlayer(text);
                     if (!players.isEmpty()){
                         Player player = players.get(0);
-                        Map<Integer, Vault> vaults = getPlayerData(player).getVaults();
+                        Map<Integer, Vault> vaults = getPlayerData(player.getUniqueId()).ge
 
                         sender.sendMessage("Vaults of Player: " + player.getName());
                         for (Map.Entry<Integer,Vault> vault : vaults.entrySet()) {
                             if (vault == null){
                                 continue;
                             }
-                            sender.sendMessage("" + vault.getValue().getVaultMetadata().getIndex() + " - " + vault.getValue().getVaultMetadata().getMaterial().getKey().getKey() + " - " + vault.getValue().getChestLocation1().toBlockLocation() + " - " + vault.getValue().getVaultMetadata().getOwner().toString());
+                            sender.sendMessage("" + vault.getValue().getVaultMetadata().getVaultIndex() + " - " + vault.getValue().getVaultMetadata().getMaterial().getKey().getKey() + " - " + vault.getValue().getChestLocation1().toBlockLocation() + " - " + vault.getValue().getVaultMetadata().getOwner().toString());
                         }
                     }
                 }
@@ -143,7 +143,7 @@ public class ResourceVaults extends JavaPlugin {
         return false;
     }
 
-    public static PlayerData getPlayerDataManager(UUID own){
+    public static PlayerData getPlayerData(UUID own){
         return new PlayerData(own);
     }
 }
