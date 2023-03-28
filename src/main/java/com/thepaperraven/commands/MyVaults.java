@@ -1,4 +1,4 @@
-package com.thepaperraven.ai.commands;
+package com.thepaperraven.commands;
 
 import com.jeff_media.jefflib.NumberUtils;
 import com.thepaperraven.ai.gui.VaultGUI;

@@ -1,18 +1,32 @@
 package com.thepaperraven.ai;
 
+import com.thepaperraven.ai.gui.VaultInventory;
+import com.thepaperraven.config.PlayerConfiguration;
 import lombok.Getter;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
 @Getter
 public class PlayerData {
     private final Map<Integer, VaultInstance> vaults;
-    private final Map<Material, Map<Integer, VaultInstance>> mapByMaterial;
+    private final Map<Integer, VaultInventory> inventories = new HashMap<>();
+    @Getter
     private final UUID uuid;
-    private boolean loadOnCreate;
+    private final boolean loadOnCreate;
+    @Getter
+    private PlayerConfiguration config;
+    @Getter
+    private Player player;
+    private final VaultAmounts vaultAmounts;
 
     // Other fields and methods for the PlayerData class
     public PlayerData(UUID uuid) {
@@ -23,7 +37,9 @@ public class PlayerData {
         this.uuid = uuid;
         this.loadOnCreate = loadOnCreate;
         this.vaults = new HashMap<>();
-        this.mapByMaterial = new HashMap<>();
+        this.config = new PlayerConfiguration(uuid);
+        this.vaultAmounts = new VaultAmounts(this.getPlayer());
+
     }
 
     public void addVault(VaultInstance vaultInstance) {
@@ -32,14 +48,17 @@ public class PlayerData {
     }
 
     public void addVault(int index, VaultInstance vaultInstance) {
+        if (index == 0){
+            index++;
+        }
         vaults.put(index, vaultInstance);
-        Material material = vaultInstance.getAllowedMaterial();
-        Map<Integer, VaultInstance> materialVaults = mapByMaterial.getOrDefault(material, new HashMap<>());
-        materialVaults.put(index, vaultInstance);
-        mapByMaterial.put(material, materialVaults);
+        inventories.put(index,vaultInstance.getVaultInventory());
     }
 
     public VaultInstance getVault(int index) {
+        if (index == 0){
+            return vaults.get(1);
+        }
         return vaults.get(index);
     }
 
@@ -72,50 +91,27 @@ public class PlayerData {
             return returnValue;
         }
 
-        ResourceVaults.error("No Index found for " + instance.getOwnerUUID());
+        ResourceVaults.error("No Index found for " + instance.getMetadata().getOwnerUUID());
 
         return returnValue;
     }
 
-    public List<VaultInstance> getVaults() {
-        return new ArrayList<>(vaults.values());
+    public Map<Integer,VaultInstance> getVaults() {
+        return vaults;
     }
 
-    public List<VaultInstance> getVaultsByMaterial(Material material) {
-        Map<Integer, VaultInstance> materialVaults = mapByMaterial.getOrDefault(material, new HashMap<>());
-        return new ArrayList<>(materialVaults.values());
-    }
-
-    public int getTotalVaultCount() {
-        return vaults.size();
-    }
-
-    public int getTotalVaultCount(Material material) {
-        Map<Integer, VaultInstance> materialVaults = mapByMaterial.getOrDefault(material, new HashMap<>());
-        return materialVaults.size();
-    }
-
-    public int getTotalMaterialAmount(Material material) {
-        int totalAmount = 0;
-        Map<Integer, VaultInstance> materialVaults = mapByMaterial.getOrDefault(material, new HashMap<>());
-        for (VaultInstance vault : materialVaults.values()) {
-            int amount = vault.getAmount();
-            totalAmount += amount;
+    public List<Vault> getVaultsByMaterial(Material material) {
+        List<Vault> matching = new ArrayList<>();
+        for (Map.Entry<Integer, VaultInstance> entry : vaults.entrySet()) {
+            Integer integer = entry.getKey();
+            VaultInstance vaultInstance = entry.getValue();
+            if (vaultInstance.getMetadata().getAllowedMaterial()==material){
+                matching.set(integer, ((Vault) vaultInstance));
+            }
         }
-        return totalAmount;
+        return matching;
     }
 
-    public void updateVaultMetadata(VaultInstance vault, VaultMetadata metadata) {
-        int index = getIndexOf(vault);
-        VaultInstance updatedVault = new Vault(metadata, vault.getSignLocation(), vault.getChestLocations(), vault.getAllowedMaterial());
-        vaults.put(index, updatedVault);
-
-        Material material = vault.getAllowedMaterial();
-        Map<Integer, VaultInstance> materialVaults = mapByMaterial.get(material);
-        if (materialVaults != null) {
-            materialVaults.put(index, updatedVault);
-        }
-    }
 
     /**
      * @param index The VaultMetadata index (note: always starts at 1, instead of 0 which is natural, so please enter the Vaults internal index.
@@ -126,10 +122,119 @@ public class PlayerData {
         }
         if (vaults.containsKey(index)) {
             VaultInstance vault = vaults.remove(index);
-            Material material = vault.getAllowedMaterial();
-            if (mapByMaterial.containsKey(material)) {
-                mapByMaterial.get(material).remove(index);
-            }
+            ResourceVaults.log("Removing Vault: " + vault.getMetadata().getVaultIndex() + " from " + Bukkit.getPlayer(vault.getMetadata().getOwnerUUID()).getName());
         }
     }
+
+    public void saveVault(Vault vault) {
+        int index = vault.getMetadata().getVaultIndex();
+        config = new PlayerConfiguration(uuid);
+
+        // Save vault owner
+        config.set("vaults." + index + ".owner", vault.getMetadata().getOwnerUUID().toString());
+
+        // Save vault material
+        config.set("vaults." + index + ".material", vault.getMetadata().getAllowedMaterial().getKey().getKey());
+
+        // Save chest locations
+        List<String> chestLocStrings = new ArrayList<>();
+        for (Location loc : vault.getChestLocations()) {
+            chestLocStrings.add(locationToString(loc));
+        }
+        config.set("vaults." + index + ".chestLocations", chestLocStrings);
+
+        // Save sign location
+        config.set("vaults." + index + ".signLocation", locationToString(vault.getSignLocation()));
+
+        // Save locked state
+        config.set("vaults." + index + ".lockedState", vault.isLocked());
+
+        try {
+            config.save(config.getFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Could not save to file: " + config.getFile().getName() + "!");
+        }
+    }
+
+    public Vault loadVault(int index) {
+        FileConfiguration config = getConfig();
+        if (!config.contains("vaults." + index)) {
+            return null;
+        }
+
+        // Load vault owner
+        UUID owner = UUID.fromString(config.getString("vaults." + index + ".owner",null));
+        if (!owner.equals(getUuid()) && getUuid() != null) {
+            return null;
+        }
+
+        // Load vault material
+        Material material = Material.getMaterial(config.getString("vaults." + index + ".material","WHEAT"));
+        if (material == null) {
+            return null;
+        }
+
+        // Load chest locations
+        List<String> chestLocStrings = config.getStringList("vaults." + index + ".chestLocations");
+        List<Location> chestLocs = new ArrayList<>();
+        for (String locString : chestLocStrings) {
+            Location loc = stringToLocation(locString);
+            if (loc == null) {
+                return null;
+            }
+            chestLocs.add(loc);
+        }
+
+        // Load sign location
+        Location signLoc = stringToLocation(config.getString("vaults." + index + ".signLocation"));
+        if (signLoc == null) {
+            return null;
+        }
+
+        // Load locked state
+        boolean lockedState = config.getBoolean("vaults." + index + ".lockedState",true);
+
+        VaultMetadata metadata = new VaultMetadata(material, uuid, index);
+        Vault vault = new Vault(metadata, chestLocs, signLoc);
+        //Locks or Unlocks the Vault
+        vault.setLocked(lockedState);
+        return vault;
+    }
+
+    private String locationToString(Location loc) {
+        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+    }
+
+    private Location stringToLocation(String locString) {
+        String[] split = locString.split(",");
+        if (split.length != 4) {
+            return null;
+        }
+        World world = Bukkit.getWorld(split[0]);
+        if (world == null) {
+            return null;
+        }
+        int x = Integer.parseInt(split[1]);
+        int y = Integer.parseInt(split[2]);
+        int z = Integer.parseInt(split[3]);
+        return new Location(world, x, y, z);
+    }
+    public boolean isVaultSaved(int index) {
+        if (vaults.containsKey(index)) {
+            Vault vault = (Vault) vaults.get(index);
+            if (config.contains("vaults." + index)) {
+                ConfigurationSection section = config.getConfigurationSection("vaults." + index);
+                if (section != null) {
+                    Vault savedVault = loadVault(index);
+                    return savedVault != null && savedVault.equals(vault);
+                }
+            }
+        }
+        return false;
+    }
+
+    public File getFile(){
+        return new PlayerConfiguration(this.uuid).getFile();
+    }
+
 }

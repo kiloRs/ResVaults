@@ -29,6 +29,8 @@ public interface VaultManagerSystem {
      */
     Vault getVault(UUID ownerUUID, int index, Material material);
 
+    Vault getVault(UUID ownerUUID, int index);
+
     /**
      * Deletes the specified Vault instance.
      *
@@ -50,7 +52,7 @@ public interface VaultManagerSystem {
      * @param material the material type
      * @return a list of Vault instances
      */
-    List<Vault> getVaults(Material material);
+    List<Vault> getVaults(Material material, UUID owner);
 
     /**
      * Retrieves the total balance of all the vaults owned by the specified player.
@@ -60,13 +62,8 @@ public interface VaultManagerSystem {
      */
     int getBalance(UUID ownerUUID);
 
-    /**
-     * Retrieves the total balance of all the vaults with the specified material type.
-     *
-     * @param material the material type
-     * @return the total balance
-     */
-    int getBalance(Material material);
+    int getBalance(UUID ownerUUID, Material material);
+
 
     /**
      * Retrieves the total number of vaults owned by the specified player.
@@ -82,11 +79,9 @@ public interface VaultManagerSystem {
      * @param material the material type
      * @return the total number of vaults
      */
-    int getTotalVaults(Material material);
+    int getTotalVaults(Material material, UUID uuid);
 
-    boolean isGreaterThan(int amount, Material material);
-    boolean isEqualTo(int amount, Material material);
-    boolean isTotalAmountGreaterThan(int amount);
-    boolean isTotalAmountLessThan(int amount);
+    PlayerData getOwner(VaultInstance vault);
+
 
 }

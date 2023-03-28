@@ -1,4 +1,4 @@
-package com.thepaperraven.ai.commands;
+package com.thepaperraven.commands;
 
 import com.thepaperraven.ai.ResourceVaults;
 import com.thepaperraven.ai.Vault;

@@ -1,30 +1,41 @@
 package com.thepaperraven.ai;
 
 
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.inventory.InventoryHolder;
+import com.thepaperraven.ai.gui.VaultInventory;
+import org.bukkit.block.Block;
 
-import java.util.UUID;
+import java.util.List;
 
-public interface VaultInstance{
-    UUID getOwnerUUID();
-    Location getSignLocation();
-    Location getChestLocation1();
-    Location getChestLocation2();
-    Material getAllowedMaterial();
-    boolean isDoubleChest();
-    InventoryHolder getHolder();
-    VaultMetadata getVaultMetadata();
-    boolean isValid();
-    public boolean isActive();
-    void toConfig(FileConfiguration config, String path);
-    static VaultInstance fromConfig(FileConfiguration config, String path) {
-        return Vault.fromConfig(config, path);
-    }
+public interface VaultInstance extends VaultLock {
+    VaultInventory getVaultInventory();
+    VaultMetadata getMetadata();
+    boolean isActive();
+    boolean hasSign();
+    boolean hasOwner();
+    boolean isLocked();
 
-    public default boolean equals(VaultInstance other){
-        return this.getOwnerUUID().equals(other.getOwnerUUID())&&this.getChestLocation1().toBlockLocation().equals(other.getChestLocation1().toBlockLocation());
-    }
+    @Override
+    List<Block> lockedBlocks();
+
+    /**
+     * Gets the exact amount of items within the Vault (count the amount of itemstacks per slot).
+     *
+     * @return the amount of items within the Vault
+     */
+    public int getAmount();
+
+    /**
+     * Adds the specified amount of items to the VaultInventory, creating new ItemStack(vault.getMetadata().getAllowedMaterial)
+     * and adding them to the first not-max-size slots, until the inventory is full.
+     *
+     * @param amount the amount of items to add
+     * @return the amount of items overflowing from the inventory
+     */
+    public int add(int amount);
 }
+
+
+//    public default boolean equals(VaultInstance other){
+//        return this.getOwnerUUID().equals(other.getOwnerUUID())&&this.getChestLocation1().toBlockLocation().equals(other.getChestLocation1().toBlockLocation());
+//    }
+//}

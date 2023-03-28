@@ -45,7 +45,7 @@ public class VaultGUI implements InventoryHolder, Listener {
 
         // Get all the player's vaults and sort them by index
         this.playerVaults = ResourceVaults.getVaultManager().getVaults(player.getUniqueId());
-        this.playerVaults.sort((v1, v2) -> Integer.compare(v1.getIndex(), v2.getIndex()));
+        this.playerVaults.sort((v1, v2) -> Integer.compare(v1.getMetadata().getVaultIndex(), v2.getMetadata().getVaultIndex()));
 
         // Calculate the range of vaults to display on this page
         int startIndex = (page - 1) * PAGE_SIZE;
@@ -58,7 +58,7 @@ public class VaultGUI implements InventoryHolder, Listener {
 
             // Add the vault PDC to the itemstack's metadata
             PersistentDataContainer pdc = vaultItem.getItemStack().getItemMeta().getPersistentDataContainer();
-            pdc.set(VaultKeys.getIndexKey(), PersistentDataType.INTEGER, vault.getIndex());
+            pdc.set(VaultKeys.getIndexKey(), PersistentDataType.INTEGER, vault.getMetadata().getVaultIndex());
             pdc.set(VaultKeys.getLocationKey(), DataType.LOCATION, vault.getLocation());
 
             inventory.setItem(vaultItem.getVault().getIndex() % PAGE_SIZE, vaultItem.getItemStack());

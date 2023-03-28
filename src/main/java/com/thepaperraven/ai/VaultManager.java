@@ -1,100 +1,138 @@
 package com.thepaperraven.ai;
 
-import com.thepaperraven.ai.events.VaultCreateEvent;
-import lombok.Getter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Getter
-public class VaultManager {
-    private final PlayerData playerData;
+import static com.thepaperraven.ai.ResourceVaults.getPlayerData;
 
-    public VaultManager(PlayerData playerData) {
-        this.playerData = playerData;
-    }
+public class VaultManager implements VaultManagerSystem {
+    private final Plugin storedPlugin;
+    private static boolean initialized = false;
 
+    public VaultManager(Plugin plugin) {
+        this.storedPlugin = plugin;
 
-    public void addVault(VaultInstance vault) {
-        UUID ownerUUID = vault.getOwnerUUID();
-        List<VaultInstance> vaults = playerData.getVaults(ownerUUID);
-        vaults.add(vault);
-        playerData.setVaults(ownerUUID, vaults);
-    }
-
-
-    public void removeVault(VaultInstance vault) {
-        UUID ownerUUID = vault.getOwnerUUID();
-        List<VaultInstance> vaults = playerData.getVaults(ownerUUID);
-        vaults.remove(vault);
-        playerData.setVaults(ownerUUID, vaults);
-    }
-
-
-    public List<VaultInstance> getVaults(UUID ownerUUID) {
-        return playerData.getVaults(ownerUUID);
-    }
-
-
-    public int getTotalVaultCount() {
-        int count = 0;
-        for (UUID uuid : playerData.getUUIDs()) {
-            count += playerData.getVaults(uuid).size();
+        if (initialized&&plugin!=ResourceVaults.getPlugin()){
+            throw new RuntimeException("You cannot reinitialize the Vault Manager! Please use ResourceVaults.getVaultManager()");
         }
-        return count;
+        initialized = true;
+    }
+
+    @Override
+    public Vault createVault(UUID ownerUUID, Material material, Location signLocation, List<Location> chestLocations) {
+        PlayerData playerData = getPlayerData(ownerUUID);
+        int vaultIndex = playerData.getNextIndex();
+        Vault vaultInstance = new Vault(VaultMetadata.get(material, playerData.getPlayer(), vaultIndex), chestLocations,signLocation);
+        playerData.addVault(vaultInstance);
+        return vaultInstance;
+    }
+
+    @Override
+    public Vault getVault(UUID ownerUUID, int index, Material material) {
+        VaultInstance vault = getPlayerData(ownerUUID).getVault(index);
+        return vault.getMetadata().getAllowedMaterial()==material? ((Vault) vault):null;
+    }
+
+    @Override
+    public Vault getVault(UUID ownerUUID, int index) {
+        PlayerData playerData = getPlayerData(ownerUUID);
+        return (Vault) playerData.getVault(index);
     }
 
 
-    public int getTotalVaultCount(Material material) {
-        int count = 0;
-        for (UUID uuid : playerData.getUUIDs()) {
-            List<VaultInstance> vaults = playerData.getVaults(uuid);
-            for (VaultInstance vault : vaults) {
-                if (vault.getAllowedMaterial() == material) {
-                    count++;
+    @Override
+    public void deleteVault(Vault vault) {
+        PlayerData playerData = getPlayerData(vault.getMetadata().getOwnerUUID());
+        playerData.removeVault(vault.getMetadata().getVaultIndex());
+    }
+
+    @Override
+    public List<Vault> getVaults(UUID ownerUUID) {
+        List<Vault> vaults = new ArrayList<>();
+        PlayerData playerData = getPlayerData(ownerUUID);
+        for (Map.Entry<Integer,VaultInstance> vaultsLoaded : playerData.getVaults().entrySet()) {
+            vaults.add(((Vault) vaultsLoaded.getValue()));
+        }
+        return vaults;
+    }
+
+    @Override
+    public List<Vault> getVaults(Material material, UUID owner) {
+        PlayerData playerData = getPlayerData(owner);
+        return playerData.getVaultsByMaterial(material);
+    }
+
+    @Override
+    public int getBalance(UUID ownerUUID) {
+        PlayerData playerData = getPlayerData(ownerUUID);
+        int total = 0;
+        for (Map.Entry<Integer,VaultInstance> vaultsLoaded : playerData.getVaults().entrySet()) {
+            int amount = vaultsLoaded.getValue().getAmount();
+            total = amount + total;
+        }
+        return total;
+    }
+
+    /**
+     * @param material the material type
+     * @return all known vaults in existence!
+     */
+    public List<Vault> getVaults(Material material) {
+        List<Vault> vaults = new ArrayList<>();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                PlayerData playerData = ResourceVaults.getPlayerData(player.getUniqueId());
+            for (VaultInstance vaultInstance : playerData.getVaults().values()) {
+                if (vaultInstance.getMetadata().getAllowedMaterial() == material) {
+                    vaults.add(((Vault) vaultInstance));
                 }
             }
         }
-        return count;
+        return vaults;
     }
 
-
-    public int getTotalMaterialAmount(Material material) {
-        int totalAmount = 0;
-        for (UUID uuid : playerData.getUUIDs()) {
-            List<VaultInstance> vaults = playerData.getVaults(uuid);
-            for (VaultInstance vault : vaults) {
-                if (vault.getAllowedMaterial() == material) {
-                    int amount = vault.getMetadata().getAmount();
-                    totalAmount += amount;
-                }
-            }
-        }
-        return totalAmount;
+    @Override
+    public int getBalance(UUID ownerUUID, Material material) {
+        PlayerData playerData = getPlayerData(ownerUUID);
+        return playerData.getVaultAmounts().getTotalMaterialInAllVaults(material);
     }
 
-
-    public void updateVaultMetadata(VaultInstance vault, VaultMetadata metadata) {
-        UUID ownerUUID = vault.getOwnerUUID();
-        List<VaultInstance> vaults = playerData.getVaults(ownerUUID);
-        int index = vaults.indexOf(vault);
-        VaultInstance updatedVault = new Vault(metadata, vault.getSignLocation(), vault.getChestLocations(), vault.getAllowedMaterial());
-        vaults.set(index, updatedVault);
-        playerData.setVaults(ownerUUID, vaults);
+    @Override
+    public int getTotalVaults(UUID ownerUUID) {
+        PlayerData playerData = getPlayerData(ownerUUID);
+        return playerData.getVaultAmounts().getTotalVaults();
     }
 
+    @Override
+    public int getTotalVaults(Material material, UUID uuid) {
+        return ResourceVaults.getPlayerData(uuid).getVaultsByMaterial(material).size();
+    }
 
+    @Override
+    public PlayerData getOwner(VaultInstance vault) {
+        return ResourceVaults.getPlayerData(vault.getMetadata().getOwnerUUID());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (!(o instanceof VaultManager that)) return false;
+
+        return new EqualsBuilder().append(storedPlugin, that.storedPlugin).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(storedPlugin).toHashCode();
+    }
 }

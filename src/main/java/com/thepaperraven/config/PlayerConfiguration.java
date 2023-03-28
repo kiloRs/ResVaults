@@ -23,6 +23,9 @@ public class PlayerConfiguration extends YamlConfiguration {
         this.configFile = new File(plugin.getDataFolder() + "/playerdata/" + playerUUID.toString() + ".yml");
     }
 
+    public File getFile(){
+        return new File(ResourceVaults.getPlugin().getDataFolder(),"/playerdata/" + playerUUID.toString() + ".yml");
+    }
     public void save() {
         try {
             this.save(configFile);
