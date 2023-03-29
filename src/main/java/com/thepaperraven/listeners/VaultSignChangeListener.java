@@ -1,26 +1,25 @@
 package com.thepaperraven.listeners;
 
-import com.thepaperraven.ai.PlayerData;
 import com.thepaperraven.ResourceVaults;
+import com.thepaperraven.ai.PlayerData;
 import com.thepaperraven.ai.Vault;
-import com.thepaperraven.ai.VaultMetadata;
 import com.thepaperraven.ai.VaultEventFactory;
+import com.thepaperraven.ai.VaultMetadata;
+import com.thepaperraven.utils.VaultUtil;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
-import org.bukkit.block.DoubleChest;
+import org.bukkit.block.*;
+import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
-import org.bukkit.material.Attachable;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class VaultSignChangeListener implements Listener {
     private final Plugin plugin;
@@ -47,8 +46,8 @@ public class VaultSignChangeListener implements Listener {
 
         // Get the material of the chest connected to the sign
         Block attachedBlock;
-        if (block.getBlockData() instanceof Attachable) {
-            BlockFace attachedFace = ((Attachable) block.getBlockData()).getAttachedFace();
+        if (block.getBlockData() instanceof WallSign wallSign) {
+            BlockFace attachedFace = wallSign.getFacing().getOppositeFace();
             attachedBlock = block.getRelative(attachedFace);
         } else {
             attachedBlock = null;
@@ -91,7 +90,9 @@ public class VaultSignChangeListener implements Listener {
 
 
         // Add the new vault to the player data and update the PDCs of the blocks involved
-        playerData.addVault(vault);
+        List<Chest> connectedChests = VaultUtil.getConnectedChests(((Sign) block.getState()));
+        List<Location> locations = connectedChests.stream().map(BlockState::getLocation).toList();
+        ResourceVaults.getVaultManager().createVault(player.getUniqueId(),material,block.getLocation(), locations);
         vault.updatePDC();
 
 

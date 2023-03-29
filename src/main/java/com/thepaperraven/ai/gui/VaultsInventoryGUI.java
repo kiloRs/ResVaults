@@ -93,7 +93,7 @@ public class VaultsInventoryGUI implements InventoryHolder, Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW,ignoreCancelled = true)
-    public void onInventoryClick(InventoryClickEvent event) {;
+    public void onInventoryClick(InventoryClickEvent event) {
         if (event.getClickedInventory() != null && event.getView().getTopInventory().getHolder() instanceof VaultsInventoryGUI holder) {
             Player player = (Player) event.getWhoClicked();
             event.setCancelled(true);

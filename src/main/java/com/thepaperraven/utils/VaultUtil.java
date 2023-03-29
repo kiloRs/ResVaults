@@ -334,8 +334,12 @@ public class VaultUtil {
         return new PlayerData(player.getUniqueId()).getNextIndex();
     }
 
+    public static boolean isDoubleChest(Chest chest){
+        Block doubleChest = getDoubleChest(chest);
+        return doubleChest != null;
+    }
     // Helper method to get the double chest if the given chest is part of a double chest
-    private Block getDoubleChest(Chest chest) {
+    private static Block getDoubleChest(Chest chest) {
         BlockFace[] faces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
         for (BlockFace face : faces) {
             Block adjacent = chest.getBlock().getRelative(face);

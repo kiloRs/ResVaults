@@ -1,17 +1,19 @@
 package com.thepaperraven.ai;
 
-import com.thepaperraven.ResourceVaults;
 import lombok.Getter;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
 public class VaultAmounts {
+    @NotNull(exception = RuntimeException.class)
     private final PlayerData playerData;
 
-    public VaultAmounts(Player player) {
-        this.playerData = ResourceVaults.getPlayerData(player.getUniqueId());
+    public VaultAmounts(@NotNull PlayerData player) {
+        this.playerData = player;
+
     }
 
     public int getTotalMaterialInAllVaults(Material material) {

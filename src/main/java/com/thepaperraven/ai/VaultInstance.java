@@ -23,7 +23,7 @@ public interface VaultInstance extends VaultLock {
      *
      * @return the amount of items within the Vault
      */
-    public int getAmount();
+    int getAmount();
 
     /**
      * Adds the specified amount of items to the VaultInventory, creating new ItemStack(vault.getMetadata().getAllowedMaterial)
@@ -32,7 +32,7 @@ public interface VaultInstance extends VaultLock {
      * @param amount the amount of items to add
      * @return the amount of items overflowing from the inventory
      */
-    public int add(int amount);
+    int add(int amount);
 }
 
 

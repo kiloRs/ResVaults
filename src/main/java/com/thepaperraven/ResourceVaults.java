@@ -13,11 +13,14 @@ import com.thepaperraven.listeners.VaultSignChangeListener;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.*;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -29,6 +32,7 @@ public class ResourceVaults extends JavaPlugin {
 
     @Getter
     private static Plugin plugin;
+//    private static IconManager iconManager;
 
     public static void log(String s) {
         Logger.getLogger("Minecraft").info("[ResourceVaults]" + s);
@@ -47,6 +51,9 @@ public class ResourceVaults extends JavaPlugin {
 
         plugin.reloadConfig();
 
+//        iconManager.load();
+
+
         if (savePlayersFirst){
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 PlayerData playerData = getPlayerData(onlinePlayer.getUniqueId());
@@ -63,9 +70,12 @@ public class ResourceVaults extends JavaPlugin {
     public void onEnable() {
         plugin = this;
 
+//        iconManager = new IconManager(new File(plugin.getDataFolder(),"icons.yml"));
         // Register commands!
         getCommand("rv").setExecutor(new Command());
 
+        saveDefaultConfig();
+        saveResourceFile();
         // Register listeners!
         registerListeners(this);
 
@@ -83,6 +93,7 @@ public class ResourceVaults extends JavaPlugin {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        saveConfig();
     }
 
     @NotNull
@@ -122,4 +133,46 @@ public class ResourceVaults extends JavaPlugin {
     public static PlayerData getPlayerData(UUID own) {
         return new PlayerData(own);
     }
+    public static void getLogger(int level, String text){
+        RVLogger.getInstance().log(level, text);
+    }
+    public void saveResourceFile() {
+        // Get the plugin's data folder
+        File dataFolder = getDataFolder();
+
+        // Create the plugin folder if it doesn't exist
+        if (!dataFolder.exists()) {
+            dataFolder.mkdir();
+        }
+
+        // Get the resource file as an input stream
+        InputStream inputStream = getResource("icons.yaml");
+
+        if (inputStream != null) {
+            // Create the file object to save the resource to
+            File outputFile = new File(dataFolder, "icons.yaml");
+
+            try {
+                // Create the output stream to write the file
+                OutputStream outputStream = new FileOutputStream(outputFile);
+
+                // Copy the resource file to the output stream
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+
+                // Close the input and output streams
+                inputStream.close();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    public FileConfiguration loadFile(){
+        return YamlConfiguration.loadConfiguration(new File(this.getDataFolder(),"icons.yml"));
+    }
+
 }

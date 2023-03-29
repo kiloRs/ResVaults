@@ -11,6 +11,7 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class PlayerData {
     @Getter
     private PlayerConfiguration config;
     @Getter
-    private Player player;
+    private final Player player;
     private final VaultAmounts vaultAmounts;
 
     // Other fields and methods for the PlayerData class
@@ -34,11 +35,12 @@ public class PlayerData {
         this(uuid, true);
     }
 
-    public PlayerData(UUID uuid, boolean loadOnCreate) {
+    public PlayerData(@NotNull UUID uuid, boolean loadOnCreate) {
         this.uuid = uuid;
         this.loadOnCreate = loadOnCreate;
         this.vaults = new HashMap<>();
         this.config = new PlayerConfiguration(uuid);
+        this.player = Bukkit.getPlayer(uuid);
         this.vaultAmounts = new VaultAmounts(this.getPlayer());
 
     }
@@ -168,7 +170,7 @@ public class PlayerData {
         }
 
         // Load vault owner
-        UUID owner = UUID.fromString(config.getString("vaults." + index + ".owner",null));
+        UUID owner = UUID.fromString(config.getString("vaults." + index + ".owner",""));
         if (!owner.equals(getUuid()) && getUuid() != null) {
             return null;
         }
@@ -191,7 +193,7 @@ public class PlayerData {
         }
 
         // Load sign location
-        Location signLoc = stringToLocation(config.getString("vaults." + index + ".signLocation"));
+        Location signLoc = stringToLocation(config.getString("vaults." + index + ".signLocation",""));
         if (signLoc == null) {
             return null;
         }

@@ -10,14 +10,17 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 
 public class VaultSaveLoadListener implements Listener {
+    private Plugin plugin;
+
     public VaultSaveLoadListener(Plugin plugin) {
 
+        this.plugin = plugin;
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        PlayerData playerData = new PlayerData(player.getUniqueId());
+        PlayerData playerData = ResourceVaults.getPlayerData(player.getUniqueId());
         playerData.getConfig().loadFromFile();
     }
 

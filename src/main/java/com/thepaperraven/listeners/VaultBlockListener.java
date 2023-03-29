@@ -21,7 +21,10 @@ import java.util.UUID;
 public class VaultBlockListener implements Listener {
 
 
+    private Plugin plugin;
+
     public VaultBlockListener(Plugin plugin) {
+        this.plugin = plugin;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -49,7 +52,6 @@ public class VaultBlockListener implements Listener {
                 player.sendMessage("You can't place a dispenser or dropper on top of this Vault's chest!");
             }
             else if (placedMaterial.createBlockData() instanceof Slab slab && slab.getType() != Slab.Type.DOUBLE){
-                return;
             }
             else {
                 if (placedMaterial.isSolid()) {

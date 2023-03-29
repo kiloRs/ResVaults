@@ -35,6 +35,7 @@ public class VaultManager implements VaultManagerSystem {
         int vaultIndex = playerData.getNextIndex();
         Vault vaultInstance = new Vault(VaultMetadata.get(material, playerData.getPlayer(), vaultIndex), chestLocations,signLocation);
         playerData.addVault(vaultInstance);
+        vaultInstance.updatePDC();
         return vaultInstance;
     }
 

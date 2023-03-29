@@ -1,0 +1,30 @@
+log:
+  level: 3
+
+icon-meta:
+  next:
+    material: ARROW
+    customModelData: 0
+    name: ""
+    lore:
+      - ""
+      - ""
+  current:
+    material: ARROW
+    customModelData: 0
+    name: ""
+    lore:
+      - ""
+      - ""
+  back:
+    material: ARROW
+    customModelData: 0
+    name: ""
+    lore:
+      - ""
+      - ""
+
+placeholders: true
+
+
+

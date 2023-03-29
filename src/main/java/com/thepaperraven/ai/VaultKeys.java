@@ -24,13 +24,6 @@ public class VaultKeys {
      */
     @Getter
     private static final NamespacedKey ownerKey= new NamespacedKey(ResourceVaults.getPlugin(), "owner_id");
-    /**
-     * The location key of the VaultInstance/Vault classes.
-     */
-    @Getter
-    private static final NamespacedKey locationKey= new NamespacedKey(ResourceVaults.getPlugin(), "vault_location");
-    @Getter
-    private static final NamespacedKey doubleChestLocationKey = new NamespacedKey(ResourceVaults.getPlugin(),"vault_second_location");
     @Getter
     private static final NamespacedKey materialTypeKey= new NamespacedKey(ResourceVaults.getPlugin(), "vault_material_type");
     @Getter

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface VaultLock {
 
-    public List<Block> lockedBlocks();
+    List<Block> lockedBlocks();
     void lock();
 
     void unlock();

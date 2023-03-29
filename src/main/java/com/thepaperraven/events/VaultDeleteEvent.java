@@ -28,7 +28,7 @@ public class VaultDeleteEvent extends VaultEvent implements Cancellable {
         return handlerList;
     }
     public enum DeleteMethod{
-        OWNER,SERVER,OP,TIMER,OTHER;
+        OWNER,SERVER,OP,TIMER,OTHER
     }
 }
 

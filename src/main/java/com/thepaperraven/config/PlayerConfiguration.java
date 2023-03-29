@@ -12,6 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,10 +27,10 @@ public class PlayerConfiguration extends YamlConfiguration {
     private final UUID playerUUID;
     private final File configFile;
 
-    public PlayerConfiguration(UUID uuid){
+    public PlayerConfiguration(@NotNull UUID uuid){
         this((JavaPlugin) ResourceVaults.getPlugin(),uuid);
     }
-    public PlayerConfiguration(JavaPlugin plugin, UUID playerUUID) {
+    public PlayerConfiguration(JavaPlugin plugin,@NotNull UUID playerUUID) {
         this.plugin = plugin;
         this.playerUUID = playerUUID;
         this.configFile = new File(plugin.getDataFolder() + "/playerdata/" + playerUUID.toString() + ".yml");

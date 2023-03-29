@@ -2,7 +2,6 @@ package com.thepaperraven.listeners;
 
 import com.thepaperraven.ai.Vault;
 import com.thepaperraven.ai.gui.VaultInventory;
-import io.lumine.mythic.lib.MythicLib;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,8 +16,11 @@ import org.bukkit.plugin.Plugin;
 
 public class VaultInventoryListener implements Listener {
 
+    private Plugin plugin;
+
     public VaultInventoryListener(Plugin plugin){
 
+        this.plugin = plugin;
     }
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -44,7 +46,6 @@ public class VaultInventoryListener implements Listener {
         ItemStack item = event.getCurrentItem();
         if (item != null && item.getType() != vaultInv.getVault().getMetadata().getAllowedMaterial()) {
             event.setCancelled(true);
-            return;
         }
 
 
@@ -55,7 +56,7 @@ public class VaultInventoryListener implements Listener {
         Player player = (Player) event.getPlayer();
         Vault vault = Vault.getVaultFromInventory(event.getInventory());
 
-        if (vault != null && ((!vault.getMetadata().isOwner(player)||player.isOp())||!vault.isLocked())) {
+        if (vault != null && ((!vault.getMetadata().isOwner(player)||player.isOp())|| !vault.isLocked())) {
             for (HumanEntity viewer : event.getInventory().getViewers()) {
                 if (viewer instanceof Player) {
                     viewer.sendMessage("You have been kicked from this vault because you are not the owner.");
@@ -75,11 +76,6 @@ public class VaultInventoryListener implements Listener {
 
         if (vault != null && ((!vault.getMetadata().isOwner(player)||player.isOp())|| !vault.isLocked())) {
             event.setCancelled(true);
-            return;
-        }
-        else if (vault==null && player.isOp()){
-            player.sendRawMessage(MythicLib.plugin.parseColors("&cVault does not exist?"));
-            return;
         }
 
 

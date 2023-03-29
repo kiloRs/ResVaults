@@ -38,6 +38,6 @@ public class VaultUpdatePDCEvent extends VaultEvent {
         this.reason = reason;
     }
     public enum UpdateReason{
-        CREATED,REMOVED,CHANGED;
+        CREATED,REMOVED,CHANGED
     }
 }
