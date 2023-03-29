@@ -1,6 +1,7 @@
 package com.thepaperraven.utils;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
+import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.*;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -331,6 +332,18 @@ public class VaultUtil {
      */
     public static int getPlayersVaultIndex(Player player) {
         return new PlayerData(player.getUniqueId()).getNextIndex();
+    }
+
+    // Helper method to get the double chest if the given chest is part of a double chest
+    private Block getDoubleChest(Chest chest) {
+        BlockFace[] faces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+        for (BlockFace face : faces) {
+            Block adjacent = chest.getBlock().getRelative(face);
+            if (adjacent.getState() instanceof Chest && ((Chest) adjacent.getState()).getInventory().getHolder() == chest.getInventory().getHolder()) {
+                return adjacent;
+            }
+        }
+        return null;
     }
 
 }

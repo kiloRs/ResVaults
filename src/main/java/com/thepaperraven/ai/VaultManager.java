@@ -1,5 +1,6 @@
 package com.thepaperraven.ai;
 
+import com.thepaperraven.ResourceVaults;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bukkit.Bukkit;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.thepaperraven.ai.ResourceVaults.getPlayerData;
+import static com.thepaperraven.ResourceVaults.getPlayerData;
 
 public class VaultManager implements VaultManagerSystem {
     private final Plugin storedPlugin;
@@ -22,7 +23,7 @@ public class VaultManager implements VaultManagerSystem {
     public VaultManager(Plugin plugin) {
         this.storedPlugin = plugin;
 
-        if (initialized&&plugin!=ResourceVaults.getPlugin()){
+        if (initialized&&plugin!= ResourceVaults.getPlugin()){
             throw new RuntimeException("You cannot reinitialize the Vault Manager! Please use ResourceVaults.getVaultManager()");
         }
         initialized = true;

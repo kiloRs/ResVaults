@@ -1,5 +1,6 @@
 package com.thepaperraven.ai;
 
+import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.gui.VaultInventory;
 import com.thepaperraven.config.PlayerConfiguration;
 import lombok.Getter;
@@ -40,6 +41,10 @@ public class PlayerData {
         this.config = new PlayerConfiguration(uuid);
         this.vaultAmounts = new VaultAmounts(this.getPlayer());
 
+    }
+
+    public static PlayerData get(UUID uniqueId) {
+        return new PlayerData(uniqueId);
     }
 
     public void addVault(VaultInstance vaultInstance) {

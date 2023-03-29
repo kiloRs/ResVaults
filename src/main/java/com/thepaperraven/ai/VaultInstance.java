@@ -13,6 +13,7 @@ public interface VaultInstance extends VaultLock {
     boolean hasSign();
     boolean hasOwner();
     boolean isLocked();
+    boolean save();
 
     @Override
     List<Block> lockedBlocks();

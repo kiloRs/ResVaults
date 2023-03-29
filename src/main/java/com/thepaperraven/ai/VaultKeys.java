@@ -1,5 +1,6 @@
 package com.thepaperraven.ai;
 
+import com.thepaperraven.ResourceVaults;
 import lombok.Getter;
 import org.bukkit.NamespacedKey;
 

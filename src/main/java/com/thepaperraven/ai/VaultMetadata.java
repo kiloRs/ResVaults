@@ -1,9 +1,11 @@
 package com.thepaperraven.ai;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
+import com.thepaperraven.ResourceVaults;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
@@ -36,6 +38,13 @@ public class VaultMetadata {
         this.vaultIndex = vaultIndex;
     }
 
+    public boolean isOwner(UUID uuid){
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null){
+            return false;
+        }
+        return isOwner(player);
+    }
     public boolean isOwner(Player player) {
         return player.getUniqueId().equals(this.getOwnerUUID());
     }

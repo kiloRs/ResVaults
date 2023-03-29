@@ -1,0 +1,9 @@
+- name: Last Page
+  material: ARROW
+  model_data: 1
+- name: Current Page
+  material: MAP
+  model_data: 2
+- name: Next Page
+  material: ARROW
+  model_data: 3

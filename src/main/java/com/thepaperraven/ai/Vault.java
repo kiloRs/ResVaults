@@ -1,16 +1,14 @@
 package com.thepaperraven.ai;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
+import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.gui.VaultInventory;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
-import org.bukkit.block.Sign;
+import org.bukkit.block.*;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -38,12 +36,14 @@ public class Vault implements VaultInstance {
     private final Chest mainChest;
     @Getter
     private final Sign sign;
-
     private boolean locked;
     @Getter
     private final VaultInventory vaultInventory;
+    @Getter
     private String lockPassword = "VAULT_";
-    private String LOCKED_METADATA_KEY = "vault_locked";
+    @Getter
+    private final String LOCKED_METADATA_KEY = "vault_locked";
+    @Getter
     private ArrayList<Block> lockedBlocks = new ArrayList<>();
 
     public Vault(VaultMetadata metadata, List<Location> chestLocations, Location signLocation) {
@@ -158,39 +158,10 @@ public class Vault implements VaultInstance {
         pdc.set(VaultKeys.getOwnerKey(), DataType.UUID, getMetadata().getOwnerUUID());
         pdc.set(VaultKeys.getMaterialTypeKey(), PersistentDataType.STRING,metadata.getAllowedMaterial().name());
         pdc.set(VaultKeys.getIndexKey(), PersistentDataType.INTEGER, metadata.getVaultIndex());
-        pdc.set(VaultKeys.getLocked(), DataType.BOOLEAN, locked);
+        pdc.set(VaultKeys.getLocked(), PersistentDataType.STRING, lockPassword);
 
 
     }
-
-    // Returns whether the given location is part of the vault
-//    public boolean isLocationPartOfVault(Location location) {
-//        if (location.getBlock().getState() instanceof Sign aSign){
-//            if (VaultUtil.isVault(aSign.getLocation())){
-//                if (aSign.getBlock().getBlockData() instanceof WallSign wallSign && ((TextComponent) aSign.line(0).asComponent()).content().equalsIgnoreCase("[Resources]")) {
-//                    BlockFace backSi = wallSign.getFacing().getOppositeFace();
-//                    Block otherBlock = aSign.getBlock().getRelative(backSi);
-//                    return otherBlock.getType() == Material.CHEST && VaultUtil.isVault(otherBlock) && metadata.getVaultIndex()>0&&getMetadata().getVaultIndex() == VaultUtil.getIndex(otherBlock) && getMetadata().getVaultIndex() == VaultUtil.getIndex(aSign.getBlock());
-//                }
-//                return false;
-//            }
-//            return false;
-//        }
-//        for (Location chestLocation : chestLocations) {
-//            if (chestLocation.equals(location) && chestLocation.getBlock().getState() instanceof Chest chest) {
-//                return VaultUtil.isVault(chest.getBlock());
-//             }
-//            if (chestLocation.getBlock().getType() == Material.CHEST && location.getBlock().getType() == Material.CHEST) {
-//                Chest chest1 = (Chest) chestLocation.getBlock().getState();
-//                Chest chest2 = (Chest) location.getBlock().getState();
-//                if (chest1.getInventory().equals(chest2.getInventory())) {
-//                    return VaultUtil.isVault(chest1.getBlock())&&VaultUtil.isVault(chest2.getBlock()) && getMetadata().getVaultIndex()==VaultUtil.getIndex(chest1) && getMetadata().getVaultIndex()==VaultUtil.getIndex(chest2);
-//                }
-//            }
-//        }
-//        return false;
-//    }
-
 
     @Override
     public boolean hasSign() {
@@ -279,6 +250,36 @@ public class Vault implements VaultInstance {
     public boolean isLocked(){
         return locked;
     }
+
+    public boolean save() {
+        // Save the PlayerData object
+        PlayerData d = PlayerData.get(getMetadata().getOwnerUUID());
+        d.saveVault(this);
+
+        d.loadVault(metadata.getVaultIndex());
+
+        int change = 0;
+        // Set data for each block in chestLocations
+        for (Location location : chestLocations) {
+            Block block = location.getBlock();
+            // Check if the block is a chest
+            if (block.getState() instanceof Chest chest) {
+                change++;
+                setData(chest.getPersistentDataContainer());
+            }
+        }
+
+        // Set data for the sign block
+        Block signBlock = signLocation.getBlock();
+        // Check if the block is a sign
+        if (signBlock.getState() instanceof Sign a) {
+            setData(a.getPersistentDataContainer());
+            change++;
+        }
+        return change>=2 && change < 4;
+    }
+
+
     public static List<Block> getBlocksFromInventory(Inventory inventory){
         return inventory.getHolder() instanceof VaultInventory vaultInventory1 ? vaultInventory1.getVault().getBlocks():new ArrayList<>();
     }

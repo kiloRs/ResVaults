@@ -10,7 +10,7 @@ public class LocationUtils {
     public static Location getLocationFromString(String serializedLocation) {
         String[] parts = serializedLocation.split(DELIMITER);
         if (parts.length != 4) {
-            throw new IllegalArgumentException("Invalid serialized location: " + serializedLocation);
+            return null;
         }
         String worldName = parts[0];
         double x = Double.parseDouble(parts[1]);

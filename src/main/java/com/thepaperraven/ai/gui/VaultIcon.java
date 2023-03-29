@@ -19,9 +19,9 @@ public class VaultIcon {
     private boolean active = true;
 
     public VaultIcon(Vault vault){
-        this.itemStack = new ItemStack(vault.getMaterialType(),1);
+        this.itemStack = new ItemStack(vault.getMetadata().getAllowedMaterial(),1);
         ItemMeta itemMeta = this.itemStack.getItemMeta();
-        itemMeta.setDisplayName( "&c" + vault.getMaterialType().key().asString() + " Vault " + vault.getIndex());
+        itemMeta.setDisplayName( "&c" + vault.getMetadata().getAllowedMaterial().getKey().getKey()  + " Vault " + vault.getMetadata().getVaultIndex());
         this.itemStack.setItemMeta(itemMeta);
         this.vault = vault;
     }

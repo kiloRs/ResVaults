@@ -1,7 +1,7 @@
-package com.thepaperraven.config.resources;
+package com.thepaperraven.config;
 
 import com.thepaperraven.ai.PlayerData;
-import com.thepaperraven.ai.ResourceVaults;
+import com.thepaperraven.ResourceVaults;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -10,17 +10,17 @@ import org.jetbrains.annotations.NotNull;
 public class Placeholder extends PlaceholderExpansion {
 
     @Override
-    public String getIdentifier() {
+    public @NotNull String getIdentifier() {
         return "rs";
     }
 
     @Override
-    public String getAuthor() {
+    public @NotNull String getAuthor() {
         return "KiloBytez";
     }
 
     @Override
-    public String getVersion() {
+    public @NotNull String getVersion() {
         return "1.0";
     }
 
@@ -31,30 +31,39 @@ public class Placeholder extends PlaceholderExpansion {
         }
 
         // Get the player's data
-        PlayerData playerData = ResourceVaults.getPlayerData(player);
+        PlayerData playerData = ResourceVaults.getPlayerData(player.getUniqueId());
 
         // Placeholder: %myplugin_total_vaults%
         if (identifier.equals("total_vaults")) {
-            return Integer.toString(playerData.getTotalVaults());
+            return ResourceVaults.getVaultManager().getTotalVaults(player.getUniqueId()) + "";
         }
 
         // Placeholder: %myplugin_total_vaults_[material]%
         if (identifier.startsWith("total_vaults_")) {
             String material = identifier.substring(14).toUpperCase();
-            int total = playerData.getTotalVaultsByMaterial(Material.getMaterial(material));
-            return Integer.toString(total);
+            Material mats = Material.matchMaterial(material);
+            if (mats != null){
+                int total = playerData.getVaultsByMaterial(mats).size();
+                return Integer.toString(total);
+            }
         }
 
         // Placeholder: %myplugin_total_items%
         if (identifier.equals("total_items")) {
-            return Integer.toString(playerData.getTotalItems());
+            return Integer.toString(ResourceVaults.getVaultManager().getBalance(player.getUniqueId()));
         }
 
         // Placeholder: %myplugin_total_[material]%
         if (identifier.startsWith("total_")) {
             String material = identifier.substring(6).toUpperCase();
-            int total = playerData.getTotalMaterial(Material.getMaterial(material));
-            return Integer.toString(total);
+            Material mats = Material.getMaterial(material);
+            if (mats != null){
+                int total = ResourceVaults.getVaultManager().getTotalVaults(mats,player.getUniqueId());
+                return Integer.toString(total);
+            }
+            else {
+                ResourceVaults.log("Placeholder has invalid Material name: " + material);
+            }
         }
 
         return null;

@@ -1,7 +1,7 @@
 package com.thepaperraven.listeners;
 
 import com.thepaperraven.ai.PlayerData;
-import com.thepaperraven.ai.ResourceVaults;
+import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.Vault;
 import com.thepaperraven.ai.VaultMetadata;
 import com.thepaperraven.ai.VaultEventFactory;

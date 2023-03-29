@@ -108,11 +108,4 @@ public class VaultInventory implements InventoryHolder {
         inventory.removeItem(itemStack);
     }
 
-    public void sync(boolean chestToInventory){
-        if (chestToInventory){
-            Inventory blockInventory = ((Chest) chestLocation.getBlock().getState()).getBlockInventory();
-            blockInventory.
-        }
-    }
-
 }

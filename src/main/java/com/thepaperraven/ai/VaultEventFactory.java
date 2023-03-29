@@ -1,7 +1,7 @@
 package com.thepaperraven.ai;
 
-import com.thepaperraven.ai.events.*;
 import com.thepaperraven.events.*;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -11,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 import java.util.Arrays;
 
 public class VaultEventFactory {
+    @Getter
     private final Plugin plugin;
 
     public VaultEventFactory(Plugin plugin) {

@@ -1,17 +1,14 @@
 package com.thepaperraven.ai.gui;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
-import com.thepaperraven.ai.ResourceVaults;
+import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.Vault;
 import com.thepaperraven.ai.VaultKeys;
-import com.thepaperraven.ai.VaultManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -59,9 +56,8 @@ public class VaultGUI implements InventoryHolder, Listener {
             // Add the vault PDC to the itemstack's metadata
             PersistentDataContainer pdc = vaultItem.getItemStack().getItemMeta().getPersistentDataContainer();
             pdc.set(VaultKeys.getIndexKey(), PersistentDataType.INTEGER, vault.getMetadata().getVaultIndex());
-            pdc.set(VaultKeys.getLocationKey(), DataType.LOCATION, vault.getLocation());
 
-            inventory.setItem(vaultItem.getVault().getIndex() % PAGE_SIZE, vaultItem.getItemStack());
+            inventory.setItem(vaultItem.getVault().getMetadata().getVaultIndex() % PAGE_SIZE, vaultItem.getItemStack());
         }
 
         // Add pagination buttons if there are multiple pages
@@ -100,40 +96,40 @@ public class VaultGUI implements InventoryHolder, Listener {
         return inventory;
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        // Check if the clicked inventory is the VaultGUI and cancel the event to prevent item moving
-        if (event.getInventory().getHolder() instanceof VaultGUI) {
-            event.setCancelled(true);
-
-            // Get the clicked item's PDC and open the corresponding vault
-            ItemStack clickedItem = event.getCurrentItem();
-            if (clickedItem != null && clickedItem.getType() == Material.CHEST) {
-                PersistentDataContainer pdc = clickedItem.getItemMeta().getPersistentDataContainer();
-                int vaultId = pdc.getOrDefault(VaultKeys.getIndexKey(), PersistentDataType.INTEGER,event.getSlot() + 1);
-
-                Vault vault = VaultManager.getVaultById(vaultId,player);
-                if (vault != null) {
-                    vault.open();
-                }
-            }
-
-            // Check for page buttons
-            if (event.getCurrentItem() != null && (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getBackKey()) || event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getNextKey()))) {
-                int currentPage = Integer.parseInt(ChatColor.stripColor(event.getInventory().getItem(49).getItemMeta().getDisplayName()).replace("Page ", ""));
-                int numPages = (int) Math.ceil((double) playerVaults.size() / 45);
-                int nextPage = currentPage;
-                if (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getNextKey()) && currentPage < numPages) {
-                    nextPage++;
-                } else if (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getBackKey()) && currentPage > 1) {
-                    nextPage--;
-                } else {
-                    return;
-                }
-                openPage(nextPage, ((Player) event.getWhoClicked()));
-            }
-        }
-    }
+//    @EventHandler
+//    public void onInventoryClick(InventoryClickEvent event) {
+//        // Check if the clicked inventory is the VaultGUI and cancel the event to prevent item moving
+//        if (event.getInventory().getHolder() instanceof VaultGUI) {
+//            event.setCancelled(true);
+//
+//            // Get the clicked item's PDC and open the corresponding vault
+//            ItemStack clickedItem = event.getCurrentItem();
+//            if (clickedItem != null && clickedItem.getType() == Material.CHEST) {
+//                PersistentDataContainer pdc = clickedItem.getItemMeta().getPersistentDataContainer();
+//                int vaultId = pdc.getOrDefault(VaultKeys.getIndexKey(), PersistentDataType.INTEGER,event.getSlot() + 1);
+//
+//                Vault vault = ResourceVaults.getVaultManager().getVault(e);
+//                if (vault != null) {
+//                    vault.open();
+//                }
+//            }
+//
+//            // Check for page buttons
+//            if (event.getCurrentItem() != null && (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getBackKey()) || event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getNextKey()))) {
+//                int currentPage = Integer.parseInt(ChatColor.stripColor(event.getInventory().getItem(49).getItemMeta().getDisplayName()).replace("Page ", ""));
+//                int numPages = (int) Math.ceil((double) playerVaults.size() / 45);
+//                int nextPage = currentPage;
+//                if (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getNextKey()) && currentPage < numPages) {
+//                    nextPage++;
+//                } else if (event.getCurrentItem().getItemMeta().getPersistentDataContainer().has(VaultKeys.getBackKey()) && currentPage > 1) {
+//                    nextPage--;
+//                } else {
+//                    return;
+//                }
+//                openPage(nextPage, ((Player) event.getWhoClicked()));
+//            }
+//        }
+//    }
     public static void openPage(int page, Player player) {
         VaultGUI newGUI = new VaultGUI(player, page);
         newGUI.open(true);

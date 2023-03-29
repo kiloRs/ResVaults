@@ -13,10 +13,11 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 public class VaultInventoryListener implements Listener {
 
-    public VaultInventoryListener(){
+    public VaultInventoryListener(Plugin plugin){
 
     }
     @EventHandler
@@ -36,7 +37,7 @@ public class VaultInventoryListener implements Listener {
         }
         VaultInventory vaultInv = vault.getVaultInventory();
         Player player = (Player) event.getWhoClicked();
-        if (!vaultInv.getVault().getMetadata().isOwner(player) && !player.isOp()) {
+        if (!vaultInv.getVault().getMetadata().isOwner(player) && !player.isOp() && vault.isLocked()) {
             event.setCancelled(true);
             return;
         }
@@ -54,7 +55,7 @@ public class VaultInventoryListener implements Listener {
         Player player = (Player) event.getPlayer();
         Vault vault = Vault.getVaultFromInventory(event.getInventory());
 
-        if (vault != null && (!vault.getMetadata().isOwner(player)||player.isOp())) {
+        if (vault != null && ((!vault.getMetadata().isOwner(player)||player.isOp())||!vault.isLocked())) {
             for (HumanEntity viewer : event.getInventory().getViewers()) {
                 if (viewer instanceof Player) {
                     viewer.sendMessage("You have been kicked from this vault because you are not the owner.");
@@ -72,7 +73,7 @@ public class VaultInventoryListener implements Listener {
         Player player = (Player) event.getPlayer();
         Vault vault = Vault.getVaultFromInventory(event.getInventory());
 
-        if (vault != null && (!vault.getMetadata().isOwner(player)||player.isOp())) {
+        if (vault != null && ((!vault.getMetadata().isOwner(player)||player.isOp())|| !vault.isLocked())) {
             event.setCancelled(true);
             return;
         }
