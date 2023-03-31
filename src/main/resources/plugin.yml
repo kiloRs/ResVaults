@@ -1,7 +1,8 @@
 name: ResourceVaults
-version: 1.0.3
+version: 2.2
 main: com.thepaperraven.ResourceVaults
-author: ThePaperRaven
+api-version: 1.18
+author: Kilo
 description: A plugin that adds vaults for players to store items.
 commands:
   rv:

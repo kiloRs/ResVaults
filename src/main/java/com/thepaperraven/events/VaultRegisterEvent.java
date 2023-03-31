@@ -1,22 +1,28 @@
 package com.thepaperraven.events;
 
-import com.thepaperraven.ai.Vault;
+import com.thepaperraven.ai.vault.VaultInstance;
 import lombok.Getter;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
-
-public abstract class VaultEvent extends Event implements Cancellable {
-    @Getter
+public class VaultRegisterEvent extends Event  implements Cancellable {
     private static final HandlerList handlerList = new HandlerList();
-    private boolean cancel;
     @Getter
-    private final Vault vault;
+    private final VaultInstance vault;
+    private boolean cancel = false;
 
-    public VaultEvent(Vault vault){
+    public VaultRegisterEvent(VaultInstance instance) {
+        vault = instance;
+    }
 
-        this.vault = vault;
+    @Override
+    public @NotNull HandlerList getHandlers() {
+        return handlerList;
+    }
+
+    public static HandlerList getHandlerList() {
+        return handlerList;
     }
 
     @Override
@@ -27,10 +33,5 @@ public abstract class VaultEvent extends Event implements Cancellable {
     @Override
     public void setCancelled(boolean cancel) {
         this.cancel = cancel;
-    }
-
-    @Override
-    public @NotNull HandlerList getHandlers() {
-        return handlerList;
     }
 }

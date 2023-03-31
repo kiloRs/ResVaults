@@ -1,27 +1,25 @@
 package com.thepaperraven;
 
-import com.thepaperraven.ai.PlayerData;
-import com.thepaperraven.ai.Vault;
-import com.thepaperraven.ai.VaultInstance;
-import com.thepaperraven.ai.VaultManager;
-import com.thepaperraven.commands.Command;
+import com.thepaperraven.ai.gui.VaultInventory;
+import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.ai.player.PlayerDataFileHandler;
+import com.thepaperraven.ai.vault.VaultInstance;
+import com.thepaperraven.ai.vault.VaultMetadata;
+import com.thepaperraven.ai.vault.VaultPDContainer;
 import com.thepaperraven.config.Placeholder;
-import com.thepaperraven.listeners.VaultBlockListener;
-import com.thepaperraven.listeners.VaultInventoryListener;
-import com.thepaperraven.listeners.VaultSaveLoadListener;
-import com.thepaperraven.listeners.VaultSignChangeListener;
+import com.thepaperraven.listeners.VaultBreakListener;
+import com.thepaperraven.listeners.VaultInteractionListener;
+import com.thepaperraven.listeners.VaultRegistrationListener;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.util.Map;
+import java.io.File;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -42,40 +40,39 @@ public class ResourceVaults extends JavaPlugin {
         Logger.getLogger("Minecraft").severe("[ResourceVaults] " + error);
     }
 
-    public static VaultManager getVaultManager() {
-        return new VaultManager((ResourceVaults.getPlugin()));
-    }
-
     public static void reloadPlugin(boolean savePlayersFirst){
         Bukkit.savePlayers();
 
         plugin.reloadConfig();
 
-//        iconManager.load();
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            PlayerDataFileHandler.save(PlayerData.get(onlinePlayer.getUniqueId()));
+            PlayerData d = PlayerDataFileHandler.load(onlinePlayer.getUniqueId());
 
-
-        if (savePlayersFirst){
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                PlayerData playerData = getPlayerData(onlinePlayer.getUniqueId());
-                playerData.getVaults().forEach((integer, vaultInstance) -> {
-                    playerData.saveVault(((Vault) vaultInstance));});
+            if (d.getVaults().size()>0){
+                ResourceVaults.log("Loaded " + d.getVaults().size() + " for " + onlinePlayer.getName());
             }
         }
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            getPlayerData(onlinePlayer.getUniqueId()).getVaults().forEach((integer, vaultInstance) -> getPlayerData(onlinePlayer.getUniqueId()).loadVault(integer));
-        }
+
 
     }
+
+    @NotNull
+    public static PlayerData getOwnerOf(@NotNull VaultInstance v) {
+        if (!v.getContainer().hasOwner()){
+            return new PlayerData(v.getMetadata().getOwnerUUID());
+        }
+        return new PlayerData(v.getContainer().getOwner());
+    }
+
     @Override
     public void onEnable() {
         plugin = this;
 
-//        iconManager = new IconManager(new File(plugin.getDataFolder(),"icons.yml"));
-        // Register commands!
-        getCommand("rv").setExecutor(new Command());
-
         saveDefaultConfig();
-        saveResourceFile();
+        createPlayerDataFolder();
+
+        registerConfigurationSerialization();
         // Register listeners!
         registerListeners(this);
 
@@ -115,19 +112,23 @@ public class ResourceVaults extends JavaPlugin {
     private static void savePlayers() {
         for (Player onlinePlayer : Bukkit.getServer().getOnlinePlayers()) {
             PlayerData playerData = PlayerData.get(onlinePlayer.getUniqueId());
-            for (Map.Entry<Integer, VaultInstance> entry : playerData.getVaults().entrySet()) {
-                Integer integer = entry.getKey();
-                VaultInstance vaultInstance = entry.getValue();
-                playerData.saveVault(((Vault) vaultInstance));
-            }
+            PlayerDataFileHandler.save(playerData);
         }
     }
 
+    private void registerConfigurationSerialization(){
+        ConfigurationSerialization.registerClass(PlayerData.class);
+        ConfigurationSerialization.registerClass(VaultMetadata.class);
+        ConfigurationSerialization.registerClass(VaultPDContainer.class);
+        ConfigurationSerialization.registerClass(VaultInstance.class);
+        ConfigurationSerialization.registerClass(VaultInventory.class);
+
+    }
     private void registerListeners(JavaPlugin plugin) {
-        plugin.getServer().getPluginManager().registerEvents(new VaultBlockListener(this), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new VaultInventoryListener(this), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new VaultSignChangeListener(this), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new VaultSaveLoadListener(this), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultBreakListener(),plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultInteractionListener(this), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultRegistrationListener(this), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new PlayerDataFileHandler(this), plugin);
     }
 
     public static PlayerData getPlayerData(UUID own) {
@@ -136,43 +137,16 @@ public class ResourceVaults extends JavaPlugin {
     public static void getLogger(int level, String text){
         RVLogger.getInstance().log(level, text);
     }
-    public void saveResourceFile() {
-        // Get the plugin's data folder
-        File dataFolder = getDataFolder();
 
-        // Create the plugin folder if it doesn't exist
-        if (!dataFolder.exists()) {
-            dataFolder.mkdir();
-        }
+    private void createPlayerDataFolder() {
+        // Get the plugin's directory
+        File pluginDirectory = getDataFolder();
 
-        // Get the resource file as an input stream
-        InputStream inputStream = getResource("icons.yaml");
-
-        if (inputStream != null) {
-            // Create the file object to save the resource to
-            File outputFile = new File(dataFolder, "icons.yaml");
-
-            try {
-                // Create the output stream to write the file
-                OutputStream outputStream = new FileOutputStream(outputFile);
-
-                // Copy the resource file to the output stream
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = inputStream.read(buffer)) > 0) {
-                    outputStream.write(buffer, 0, length);
-                }
-
-                // Close the input and output streams
-                inputStream.close();
-                outputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        // Create the playerdata folder if it doesn't exist
+        File playerDataFolder = new File(pluginDirectory, "playerdata");
+        if (!playerDataFolder.exists() || !playerDataFolder.isDirectory()) {
+            playerDataFolder.mkdirs();
+            log("Creating PlayerData Folder");
         }
     }
-    public FileConfiguration loadFile(){
-        return YamlConfiguration.loadConfiguration(new File(this.getDataFolder(),"icons.yml"));
-    }
-
 }

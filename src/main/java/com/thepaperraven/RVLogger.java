@@ -25,26 +25,19 @@ public class RVLogger {
     }
 
     private int getConfigLogLevel() {
-        return Math.max(0, Math.min(5, getConfig().getInt("log.level", 2)));
+        return Math.max(0, Math.min(5, getConfig().getInt("log.level", 3)));
     }
 
     private String getLogLevelPrefix(int level) {
-        switch (level) {
-            case 0:
-                return "[OFF] ";
-            case 1:
-                return "[SEVERE] ";
-            case 2:
-                return "[WARNING] ";
-            case 3:
-                return "[INFO] ";
-            case 4:
-                return "[CONFIG] ";
-            case 5:
-                return "[FINE] ";
-            default:
-                return "";
-        }
+        return switch (level) {
+            case 0 -> "[OFF] ";
+            case 1 -> "[SEVERE] ";
+            case 2 -> "[WARNING] ";
+            case 3 -> "[INFO] ";
+            case 4 -> "[CONFIG] ";
+            case 5 -> "[FINE] ";
+            default -> "";
+        };
     }
 
     private static ConfigurationSection getConfig() {
