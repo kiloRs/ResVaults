@@ -48,7 +48,7 @@ public class Placeholder extends PlaceholderExpansion {
             String material = identifier.substring(14).toUpperCase();
             Material mats = Material.matchMaterial(material);
             if (mats != null){
-                int total = playerData.getMathHandler().getTottalVaults(mats);
+                int total = playerData.getMathHandler().getTotalVaults(mats);
                 return Integer.toString(total);
             }
         }

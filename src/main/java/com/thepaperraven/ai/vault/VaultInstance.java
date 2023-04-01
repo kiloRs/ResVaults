@@ -3,29 +3,34 @@ package com.thepaperraven.ai.vault;
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.gui.VaultInventory;
 import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.config.PlayerConfiguration;
 import com.thepaperraven.events.VaultRegisterEvent;
+import com.thepaperraven.utils.LocationUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
-@SerializableAs("vault")
-public class VaultInstance implements ConfigurationSerializable, Invalidatable {
+public class VaultInstance {
     private PlayerData ownerData = null;
     private VaultInventory inventory = null;
     private VaultPDContainer container = null;
     //All the stored data goes into the VaultMetadata, from the PDContainer.
-    private VaultMetadata metadata = null;
+    private VaultCommandMeta metadata = null;
     private final String vaultCreationMethod;
     private boolean saved = false;
     private boolean valid;
 
-    public VaultInstance(VaultPDContainer container, VaultMetadata metadata, VaultInventory inventory, VaultRegisterEvent.Reason reason){
+    public VaultInstance(VaultPDContainer container, VaultCommandMeta metadata, VaultInventory inventory, VaultRegisterEvent.Reason reason){
         this.container = container;
         this.metadata = metadata;
         this.inventory = inventory;
@@ -33,11 +38,11 @@ public class VaultInstance implements ConfigurationSerializable, Invalidatable {
         this.valid = container.isValid()&&metadata.isValid()&&inventory.isValid();
         this.vaultCreationMethod = reason.name();
     }
-    public VaultInstance(VaultPDContainer container, VaultMetadata vaultMetadata, VaultInventory inventory) {
-        this(container,vaultMetadata,inventory, VaultRegisterEvent.Reason.CREATED);
+    public VaultInstance(VaultPDContainer container, VaultCommandMeta vaultCommandMetaMetadata, VaultInventory inventory) {
+        this(container, vaultCommandMetaMetadata,inventory, VaultRegisterEvent.Reason.CREATED);
     }
 
-    public VaultInstance(VaultPDContainer container, VaultMetadata metadata) {
+    public VaultInstance(VaultPDContainer container, VaultCommandMeta metadata) {
         this(container,metadata,new VaultInventory(container,metadata));
     }
 
@@ -61,60 +66,17 @@ public class VaultInstance implements ConfigurationSerializable, Invalidatable {
         return inventory;
     }
 
-
-    @Override
-    public Map<String, Object> serialize() {
-        Map<String, Object> data = new HashMap<>();
-/*
-        data.put("ownerData", ownerData);
-*/
-        data.put("inventory", inventory);
-        data.put("container", container);
-        data.put("metadata", metadata);
-        data.put("saved", saved);
-        data.put("valid", valid);
-        return data;
-    }
-
-    public static VaultInstance deserialize(Map<String, Object> data) {
-//        PlayerData ownerData = (PlayerData) data.get("ownerData");
-        VaultInventory inventory = (VaultInventory) data.get("inventory");
-        VaultPDContainer container = (VaultPDContainer) data.get("container");
-        VaultMetadata metadata = (VaultMetadata) data.get("metadata");
-        boolean saved = (boolean) data.get("saved");
-        boolean valid = (boolean) data.get("valid");
-        VaultInstance vault = new VaultInstance(container, metadata, inventory);
-        vault.ownerData = new PlayerData(metadata.getOwnerUUID());
-        vault.saved = saved;
-        vault.valid = valid;
-        return vault;
-    }
-
-    public boolean save(){
-        if (ownerData.register(this)) {
-            saveToBlock();
-            this.saved = true;
-            ResourceVaults.log("Saved Valid VaultInstance to " + ownerData.getPlayer().getName() + " as " + this.metadata.getVaultIndex());
-            return true;
-        }
-        if (ownerData.hasVault(this.metadata.getVaultIndex()) && ownerData.getVault(this.metadata.getVaultIndex())==this && ownerData.hasVault(this)){
-            this.saved = true;
-            ResourceVaults.log("No Need to Save, Already Exists in PlayerData!");
-            return true;
-        }
-        return false;
-    }
     public void saveToBlock(){
         container.saveToBlock(metadata);
     }
-    public void removeFromBlock(boolean breakSignAlso, boolean i){
+    public void removeFromBlock(){
         int x = 0;
         if (ownerData.hasVault(this.metadata.getVaultIndex())){
-            ownerData.removeVault(this.metadata.getVaultIndex(),i);
+            ownerData.removeVault(this.metadata.getVaultIndex());
             x = 1;
         }
         else {
-            this.container.removeFromBlock(breakSignAlso);
+            this.container.removeFromBlock();
             this.metadata = null;
             this.container = null;
             this.saved = false;
@@ -127,21 +89,58 @@ public class VaultInstance implements ConfigurationSerializable, Invalidatable {
         ResourceVaults.error("Removed Vault Instance Type: " + x);
     }
 
-    @Override
-    public void invalidate() {
-        this.metadata.invalidate();
-        this.container.invalidate();
-        this.inventory.invalidate();
+    public static VaultInstance getExistingVaultFrom(Location containerLoc) {
+        BlockState state = containerLoc.getBlock().getState();
+        if (!(state instanceof Container container)) {
+            ResourceVaults.error("Not a chest....");
+            return null; // not a container
+        }
+//
+//        BlockState signState = signLoc.getBlock().getState();
+//        if (!(signState instanceof Sign sign)) {
+//            return null; // not a sign
+//        }
 
-        this.metadata = null;
-        this.container = null;
-        this.saved = false;
-        this.inventory = null;
-        this.valid = false;
+//        if (!sign.getLine(0).equals("[Resources]")) {
+//            return null; // first line of sign doesn't match
+//        }
+        Material material = ResourceVaults.DEFAULT_MATERIAL;
+        VaultPDContainer containerData = VaultPDContainer.get(container);
+        if (!containerData.hasKeys()) {
+            ResourceVaults.error("No Matching Keys on Container!");
+            return null;
+        }
+        if (containerData.hasMaterialKey()){
+            material = containerData.getMaterialKey();
+        }
+
+
+        PlayerData pd = PlayerData.get(containerData.getOwner());
+        VaultInstance vault = pd.getVault(containerData.getVaultIndex());
+        if (vault == null){
+            ResourceVaults.error("Vault Error!");
+            return null;
+        }
+        return vault;
+    }
+    public static boolean registerVault(VaultInstance vault) {
+        UUID ownerUUID = vault.metadata.getOwnerUUID();
+        PlayerData playerData = PlayerData.get(ownerUUID);
+        Map<Integer, VaultInstance> vaults = playerData.getVaults();
+        boolean found = false;
+        for (VaultInstance v : vaults.values()) {
+            v.save();
+            if (v.metadata.getVaultIndex() == vault.metadata.getVaultIndex()) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            vaults.put(vault.metadata.getVaultIndex(), vault);
+            playerData.getConfig().registerVault(vault);
+            return true;
+        }
+        return false;
     }
 
-    @Override
-    public boolean isValid() {
-        return valid;
-    }
 }

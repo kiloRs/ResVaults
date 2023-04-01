@@ -1,14 +1,14 @@
 package com.thepaperraven.ai.gui;
 
-import com.thepaperraven.ai.vault.Invalidatable;
+import com.thepaperraven.ResourceVaults;
+import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.ai.vault.VaultCommandMeta;
 import com.thepaperraven.ai.vault.VaultInstance;
-import com.thepaperraven.ai.vault.VaultMetadata;
 import com.thepaperraven.ai.vault.VaultPDContainer;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -19,17 +19,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@SerializableAs("inventory")
 @Getter
-public class VaultInventory implements InventoryHolder, ConfigurationSerializable, Invalidatable {
-    private Inventory inventory;
-    private VaultPDContainer container;
-    private VaultMetadata metadata;
-    private Map<Integer,ItemStack> cache = new HashMap<Integer, ItemStack>();
-    private boolean valid = true;
+public class VaultInventory implements InventoryHolder {
+    private final Inventory inventory;
+    private final VaultPDContainer container;
+    private final VaultCommandMeta metadata;
+    private final Map<Integer,ItemStack> cache = new HashMap<Integer, ItemStack>();
+    private final boolean valid = true;
 
 
-    public VaultInventory(VaultPDContainer container, VaultMetadata metadata) {
+    public VaultInventory(VaultPDContainer container, VaultCommandMeta metadata) {
         this.inventory = container.getInventory();
         this.container = container;
         this.metadata = metadata;
@@ -170,40 +169,6 @@ public class VaultInventory implements InventoryHolder, ConfigurationSerializabl
             return count;
     }
 
-    @Override
-    public @NotNull Map<String, Object> serialize() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("size", inventory.getSize());
-        Map<Integer,Map<String, Object>> itemMaps = new HashMap<>();
-        for (int i = 0; i < getInventory().getStorageContents().length; i++) {
-            ItemStack storageContent = inventory.getStorageContents()[i];
-            if (storageContent == null || storageContent.getType()==Material.AIR || storageContent.getType() != metadata.getAllowedMaterial()){
-                itemMaps.put(i,null);
-                continue;
-            }
-            itemMaps.put(i, storageContent.serialize());
-        }
-        map.put("items", itemMaps);
-        return map;
-    }
-
-    public static VaultInventory deserialize(VaultInstance instance, Map<String, Object> map) {
-        int size = (int) map.getOrDefault("size",27);
-        Map<Integer,Map<String, Object>> itemMaps = (Map<Integer, Map<String, Object>>) map.getOrDefault("items",new HashMap<>());
-        VaultInventory inv = instance.getInventory();
-
-        for (Map.Entry<Integer,Map<String, Object>> itemMap : itemMaps.entrySet()) {
-            Integer slot = itemMap.getKey();
-            if (itemMap.getValue() == null || itemMap.getValue().isEmpty()){
-                inv.setSlot(slot,0);
-                continue;
-            }
-            inv.setSlot(slot,ItemStack.deserialize(itemMap.getValue()).getAmount());
-        }
-
-        return inv;
-    }
-
     public void open(){
         if (container.hasOwner()) {
             UUID owner = container.getOwner();
@@ -217,18 +182,13 @@ public class VaultInventory implements InventoryHolder, ConfigurationSerializabl
         Bukkit.getPlayer(owner).closeInventory(InventoryCloseEvent.Reason.PLUGIN);
     }
 
-    @Override
-    public void invalidate() {
-        this.inventory = null;
-        this.container = null;
-        this.metadata = null;
-        this.cache = null;
-        this.valid = false;
-    }
-
-    @Override
-    public boolean isValid() {
-        return valid;
+    public static void open(Player player, int x){
+        VaultInstance vault = PlayerData.get(player.getUniqueId()).getVault(x);
+        if (vault == null){
+            ResourceVaults.error("No Open Allowed");
+            return;
+        }
+        vault.getInventory().open();
     }
 }
 

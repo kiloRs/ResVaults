@@ -8,20 +8,15 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
 
-import static com.thepaperraven.ai.player.PlayerDataFileHandler.save;
-
 @Getter
-@SerializableAs("playerData")
-public class PlayerData implements ConfigurationSerializable{
-    private final Map<Integer, VaultInstance> vaults = new HashMap<>();
+public class PlayerData{
+    private final Map<Integer, VaultInstance> vaults;
     @Getter
     private final PlayerDataMathHandler mathHandler;
     private final UUID uuid;
@@ -39,6 +34,7 @@ public class PlayerData implements ConfigurationSerializable{
         this.loadOnCreate = loadOnCreate;
         this.config = new PlayerConfiguration(uuid);
         this.player = Bukkit.getPlayer(uuid);
+        this.vaults = new HashMap<>();
         this.mathHandler = new PlayerDataMathHandler() {
             private int total;
             private int totalVaults;
@@ -69,7 +65,7 @@ public class PlayerData implements ConfigurationSerializable{
             }
 
             @Override
-            public int getTottalVaults(Material material) {
+            public int getTotalVaults(Material material) {
                 totalVaults = 0;
                 vaults.forEach((integer, vaultInstance) -> {
                     if (vaultInstance.getContainer().getMaterialKey()==material){
@@ -88,7 +84,7 @@ public class PlayerData implements ConfigurationSerializable{
 
 
     public VaultInstance getVault(int index) {
-        return vaults.get(index);
+        return vaults.getOrDefault(index,null);
     }
 
     public boolean hasVault(int index) {
@@ -99,99 +95,24 @@ public class PlayerData implements ConfigurationSerializable{
         return vaults.containsValue(i);
     }
     public int getNextIndex() {
-        int index = 1;
-        while (vaults.containsKey(index)) {
-            index++;
-        }
-        return index;
-    }
-
-    public int getIndexOf(VaultInstance instance) {
-        if (!vaults.containsValue(instance)) {
-            return 0;
-        }
-        int returnValue = 0;
-        for (Map.Entry<Integer, VaultInstance> entry : vaults.entrySet()) {
-            Integer integer = entry.getKey();
-            VaultInstance vaultInstance = entry.getValue();
-            if (vaultInstance.equals(instance)) {
-                returnValue = integer;
-                continue;
-            }
-        }
-        if (returnValue > 0) {
-            return returnValue;
-        }
-
-        ResourceVaults.error("No Index found for " + instance.getMetadata().getOwnerUUID());
-
-        return returnValue;
-    }
-
-    public Map<Integer, VaultInstance  > getVaults() {
-        return vaults;
-    }
-
-    public List<VaultInstance> getVaultsByMaterial(Material material) {
-        List<VaultInstance> matching = new ArrayList<>();
-        for (Map.Entry<Integer, VaultInstance> entry : vaults.entrySet()) {
-            Integer integer = entry.getKey();
-            VaultInstance vaultInstance = entry.getValue();
-            if (vaultInstance.getMetadata().getAllowedMaterial()==material || vaultInstance.getMetadata().getAllowedMaterial().equals(material)){
-                matching.set(integer,  vaultInstance);
-            }
-        }
-        return matching;
+        return vaults.size() + 1;
     }
 
     /**
      * @param index The VaultMetadata index (note: always starts at 1, instead of 0 which is natural, so please enter the Vaults internal index.
      */
-    public void removeVault(int index, boolean invalidate) {
+    public void removeVault(int index) {
         if (index>0) {
             index = index - 1;
         }
         if (vaults.containsKey(index)) {
             VaultInstance vault = vaults.remove(index);
-            vault.removeFromBlock(true,true);
-            if (invalidate){
-                vault.invalidate();
-                ResourceVaults.log("Invalidating....");
-            }
+            vault.removeFromBlock();
             ResourceVaults.log("Removing Vault: " + vault.getMetadata().getVaultIndex()+ " from " + Bukkit.getPlayer(vault.getMetadata().getOwnerUUID()).getName());
-            save(this);
         }
     }
     public File getFile(){
         return new PlayerConfiguration(this.uuid).getFile();
-    }
-    public @NotNull Map<String, Object> serialize() {
-        Map<String, Object> data = new HashMap<>();
-        List<Map<String, Object>> vaultsData = new ArrayList<>();
-
-        for (VaultInstance vault : vaults.values()) {
-            int indexOf = getIndexOf(vault);
-            if (indexOf>0) {
-                vaultsData.set(indexOf, vault.serialize());
-            }
-        }
-
-        data.put("vaults", vaultsData);
-
-        return data;
-    }
-
-
-    public static void registerVault(VaultInstance vault) {
-        if (vault.save()) {
-            ResourceVaults.log("Registration Complete: " + vault.getMetadata().getVaultIndex());
-            save(vault.getOwnerData());
-            return;
-        }
-        ResourceVaults.log("No Registration Occurrence?");
-    }
-    public void setVaults(Map<Integer, VaultInstance> vaults) {
-        this.vaults.putAll(vaults);
     }
 
     @Override
@@ -202,21 +123,13 @@ public class PlayerData implements ConfigurationSerializable{
 
         PlayerData that = (PlayerData) o;
 
-        return new EqualsBuilder().append(uuid, that.uuid).isEquals();
+        return new EqualsBuilder().append(uuid, that.uuid).append(this.vaults,that.vaults).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(uuid).toHashCode();
+        return new HashCodeBuilder(17, 37).append(uuid).append(this.vaults).toHashCode();
     }
 
-    public boolean register(VaultInstance i) {
-        if (vaults.containsKey(i.getMetadata().getVaultIndex())) {
-            ResourceVaults.error("PlayerData already contains a storage for " + i.getMetadata().getVaultIndex() + " in " + player.getName() + "'s Map");
-            return false;
-        }
-        vaults.put(i.getMetadata().getVaultIndex(),i);
-        return true;
-    }
 
 }

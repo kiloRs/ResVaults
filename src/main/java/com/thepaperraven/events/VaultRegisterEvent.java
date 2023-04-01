@@ -3,24 +3,26 @@ package com.thepaperraven.events;
 import com.thepaperraven.ai.vault.VaultInstance;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.player.PlayerEvent;
 import org.jetbrains.annotations.NotNull;
-public class VaultRegisterEvent extends Event  implements Cancellable {
+public class VaultRegisterEvent extends PlayerEvent implements Cancellable {
     private static final HandlerList handlerList = new HandlerList();
     @Getter
     private final VaultInstance vault;
     @Getter
     @Setter
-    private Reason reason = Reason.CREATED;
+    private Reason reason;
     private boolean cancel = false;
 
     public VaultRegisterEvent(VaultInstance instance) {
         this(instance,Reason.CREATED);
     }
     public VaultRegisterEvent(VaultInstance instance,Reason reason) {
-        vault = instance;
+        super(Bukkit.getPlayer(instance.getMetadata().getOwnerUUID()));
+        this.vault = instance;
         this.reason =reason;
     }
     @Override

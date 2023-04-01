@@ -30,9 +30,6 @@ public class VaultKeys {
     private static final NamespacedKey materialTypeKey= new NamespacedKey(getPlugin(), "vault_material_type");
     @Getter
     private static final NamespacedKey indexKey= new NamespacedKey(getPlugin(), "vault_index");
-    @Getter
-    private static final NamespacedKey vaultKey= new NamespacedKey(getPlugin(), "vault_create_date");
-    @Getter
-    private static final NamespacedKey locked = new NamespacedKey(getPlugin(), "vault_locked");
+
 
 }

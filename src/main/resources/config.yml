@@ -1,6 +1,10 @@
 log:
   level: 3
 
+save:
+  timer: 5 #minutes
+
+
 
 
 

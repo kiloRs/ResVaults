@@ -6,5 +6,5 @@ public interface PlayerDataMathHandler {
     public int getTotalItems();
     public int getTotalItems(Material material);
     public int getTotalVaults();
-    public int getTottalVaults(Material material);
+    public int getTotalVaults(Material material);
 }
