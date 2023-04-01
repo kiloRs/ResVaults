@@ -3,9 +3,7 @@ package com.thepaperraven.ai.vault;
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.gui.VaultInventory;
 import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.config.PlayerConfiguration;
 import com.thepaperraven.events.VaultRegisterEvent;
-import com.thepaperraven.utils.LocationUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -13,11 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Map;
-import java.util.UUID;
 
 @Getter
 public class VaultInstance {
@@ -123,24 +116,4 @@ public class VaultInstance {
         }
         return vault;
     }
-    public static boolean registerVault(VaultInstance vault) {
-        UUID ownerUUID = vault.metadata.getOwnerUUID();
-        PlayerData playerData = PlayerData.get(ownerUUID);
-        Map<Integer, VaultInstance> vaults = playerData.getVaults();
-        boolean found = false;
-        for (VaultInstance v : vaults.values()) {
-            v.save();
-            if (v.metadata.getVaultIndex() == vault.metadata.getVaultIndex()) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            vaults.put(vault.metadata.getVaultIndex(), vault);
-            playerData.getConfig().registerVault(vault);
-            return true;
-        }
-        return false;
-    }
-
 }

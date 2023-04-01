@@ -103,10 +103,7 @@ public class CreateVaultCommand {
         ResourceVaults.log("Registering?...");
 
 
-        if (PlayerData.registerVault(instance)) {
-            ResourceVaults.log("Created Vault of " +((instance.getContainer().hasSecondChest()) ? 2 : 1 )+ " Chest(s)");
-
-        }
+        //This is where the registering of the Vault occurs!
 
         player.sendMessage("Vault created with index " + instance.getContainer().getVaultIndex() + "!");
         return true;
