@@ -3,6 +3,7 @@ package com.thepaperraven.ai.vault;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.utils.LocationUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -17,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -24,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.thepaperraven.config.VaultKeys.*;
-import static com.thepaperraven.utils.LocationUtils.isDoubleChest;
 @SuppressWarnings("deprecation")
 @Getter
 @SerializableAs("container")
@@ -36,37 +37,35 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
     private BlockFace signFace;
     private boolean valid = true;
 
-    public static VaultPDContainer getDoubleChest(@NotNull DoubleChest doubleChest){
+    public static VaultPDContainer getDoubleChest(@NotNull DoubleChest doubleChest) {
         return new VaultPDContainer(doubleChest);
     }
-    public static VaultPDContainer getChest(@NotNull Chest chest){
+
+    public static VaultPDContainer getChest(@NotNull Chest chest) {
         InventoryHolder holder = chest.getBlockInventory().getHolder();
-        if (holder == null){
+        if (holder == null) {
             return null;
         }
-        if (holder instanceof DoubleChest doubleChest){
+        if (holder instanceof DoubleChest doubleChest) {
             return getDoubleChest(doubleChest);
         }
         return new VaultPDContainer(holder);
     }
 
-    public VaultPDContainer(@NotNull InventoryHolder holder){
-        if (holder instanceof DoubleChest doubleChest){
+    public VaultPDContainer(@NotNull InventoryHolder holder) {
+        if (holder instanceof DoubleChest doubleChest) {
             this.blockHolder = doubleChest;
             this.left = ((Chest) doubleChest.getLeftSide().getInventory().getLocation().getBlock().getState());
             if (doubleChest.getRightSide() != null) {
                 this.right = ((Chest) doubleChest.getRightSide().getInventory().getLocation().getBlock().getState());
             }
-        }
-        else if (holder instanceof Chest chestInventoryHolder){
+        } else if (holder instanceof Chest chestInventoryHolder) {
             this.blockHolder = chestInventoryHolder;
             this.left = ((Chest) chestInventoryHolder.getBlock().getState());
-        }
-        else if (holder instanceof Container container){
+        } else if (holder instanceof Container container) {
             this.blockHolder = container;
             this.left = ((Container) container.getBlock().getState());
-        }
-        else {
+        } else {
             throw new RuntimeException("Invalid InventoryHolder for PDContainer!");
         }
         updateSignState();
@@ -105,7 +104,7 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
             return null;
         }
         return Material.getMaterial(left.getPersistentDataContainer().getOrDefault(getMaterialTypeKey(),
-                PersistentDataType.STRING,"WHEAT"));
+                PersistentDataType.STRING, "WHEAT"));
     }
 
     public void setOwner(UUID owner) {
@@ -127,6 +126,7 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
     public UUID getOwner() {
         return left.getPersistentDataContainer().get(getOwnerKey(), DataType.UUID);
     }
+
     public void setVaultIndex(int index) {
         left.getPersistentDataContainer().set(getIndexKey(), PersistentDataType.INTEGER, index);
         if (hasSecondChest()) {
@@ -150,18 +150,21 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
         }
         Integer leftIndex = left.getPersistentDataContainer().getOrDefault(getIndexKey(), PersistentDataType.INTEGER, 0);
         Integer rightIndex = right == null ? leftIndex : right.getPersistentDataContainer().getOrDefault(getIndexKey(), PersistentDataType.INTEGER, 0);
-        return rightIndex.intValue()==leftIndex.intValue() ?leftIndex:0;
+        return rightIndex.intValue() == leftIndex.intValue() ? leftIndex : 0;
     }
+
     public Inventory getInventory() {
         return left.getInventory();
     }
-    public InventoryHolder getInventoryHolder(){
+
+    public InventoryHolder getInventoryHolder() {
         return blockHolder;
     }
 
-    public boolean hasSecondChest(){
-        return right!=null&&right.getBlock().getState() instanceof Chest chest;
+    public boolean hasSecondChest() {
+        return right != null && right.getBlock().getState() instanceof Chest chest;
     }
+
     public void updateSignState() {
         signState = 0;
         signFace = null;
@@ -179,7 +182,7 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
                 }
             }
 
-            if (rightBlock != null && signState == 0 && signFace ==null) {
+            if (rightBlock != null && signState == 0 && signFace == null) {
                 signBlock = rightBlock.getRelative(face);
                 if (signBlock.getState() instanceof Sign sign) {
                     if (sign.getLine(0).equals("[Resources]")) {
@@ -191,28 +194,28 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
             }
         }
     }
-    public Sign getSign(){
-        if (signState==0){
+
+    public Sign getSign() {
+        if (signState == 0) {
             return null;
-        }
-        else if (signState == 1){
+        } else if (signState == 1) {
             BlockState state = left.getBlock().getRelative(signFace).getState();
-            return state instanceof Sign sign?sign:null;
-        }
-        else if (signState == 2){
+            return state instanceof Sign sign ? sign : null;
+        } else if (signState == 2) {
             BlockState state = right.getBlock().getRelative(signFace).getState();
-            return state instanceof Sign sign?sign:null;
+            return state instanceof Sign sign ? sign : null;
         }
         return null;
     }
-    public void updateFromSign(){
+
+    public void updateFromSign() {
         updateSignState();
         Block relative = null;
-        if (signState>0 && signFace != null){
-            if (signState == 1){
+        if (signState > 0 && signFace != null) {
+            if (signState == 1) {
                 relative = left.getBlock().getRelative(signFace);
                 if (relative.getState() instanceof Sign sign) {
-                    if (sign.getLines().length>3) {
+                    if (sign.getLines().length > 3) {
                         UUID playerUniqueId = Bukkit.getPlayerUniqueId(sign.getLine(2));
                         if (playerUniqueId != null) {
                             setOwner(playerUniqueId);
@@ -222,7 +225,7 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
                             String matLine = sign.getLine(1);
                             Material material = Material.matchMaterial(matLine);
 
-                            if (material == null){
+                            if (material == null) {
                                 material = Material.WHEAT;
                             }
                             setMaterialKey(material);
@@ -232,80 +235,83 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
             }
         }
     }
-    public boolean hasKeys(){
-        return hasKeys(isDoubleChest(left.getBlock()));
+
+    public boolean hasKeys() {
+        return hasKeys(LocationUtils.isDoubleChest(left.getBlock()));
     }
-    public boolean hasKeys(boolean requireDoubleChest){
-        if (hasSecondChest() && requireDoubleChest){
+
+    public boolean hasKeys(boolean requireDoubleChest) {
+        if (hasSecondChest() && requireDoubleChest) {
             return hasOwner() && hasMaterialKey() && hasVaultIndex();
         }
         return hasMaterialKey() && hasOwner() && hasVaultIndex();
     }
 
-    public Location getLocationOfSign(){
+    public Location getLocationOfSign() {
         updateSignState();
 
-        if (signState>0){
+        if (signState > 0) {
             if (signState == 1) {
                 Block b = left.getBlock().getRelative(signFace);
-                return b.getState() instanceof Sign aSign?aSign.getLocation().toBlockLocation():null;
+                return b.getState() instanceof Sign aSign ? aSign.getLocation().toBlockLocation() : null;
             }
-            if (signState == 2){
+            if (signState == 2) {
                 Block b = right.getBlock().getRelative(signFace);
-                return b.getState() instanceof Sign aSign?aSign.getLocation().toBlockLocation():null;
+                return b.getState() instanceof Sign aSign ? aSign.getLocation().toBlockLocation() : null;
             }
         }
         return null;
     }
+
     @Override
     public @NotNull Map<String, Object> serialize() {
         Map<String, Object> mapping = new HashMap<>();
-        if (isDoubleChest(left.getBlock()) && hasSecondChest()){
-            mapping.put("chest.left.location",left.getLocation().toBlockLocation().serialize());
-            mapping.put("chest.right.location",right.getLocation().toBlockLocation().serialize());
-            mapping.put("sign.face",signFace);
-            mapping.put("sign.state",signState);
-            mapping.put("sign.location",getLocationOfSign().toBlockLocation().serialize());
-            if (hasOwner()){
-                mapping.put("owner",getOwner().toString());
+        if (LocationUtils.isDoubleChest(left.getBlock()) && hasSecondChest()) {
+            mapping.put("chest.left.location", left.getLocation().toBlockLocation().serialize());
+            mapping.put("chest.right.location", right.getLocation().toBlockLocation().serialize());
+            mapping.put("sign.face", signFace);
+            mapping.put("sign.state", signState);
+            mapping.put("sign.location", getLocationOfSign().toBlockLocation().serialize());
+            if (hasOwner()) {
+                mapping.put("owner", getOwner().toString());
             }
-            if (hasMaterialKey()){
-                mapping.put("material",getMaterialKey().name());
+            if (hasMaterialKey()) {
+                mapping.put("material", getMaterialKey().name());
             }
-            if (hasVaultIndex()){
-                mapping.put("index",getVaultIndex());
+            if (hasVaultIndex()) {
+                mapping.put("index", getVaultIndex());
             }
 
             return mapping;
         }
-        mapping.put("chest.left.location",left.getLocation().toBlockLocation().serialize());
-        mapping.put("chest.right.location",hasSecondChest()?right.getLocation().toBlockLocation().serialize():null);
-        mapping.put("sign.face",signFace);
-        mapping.put("sign.state",signState);
-        mapping.put("sign.location",getLocationOfSign().toBlockLocation().serialize());
-        if (hasOwner()){
-            mapping.put("owner",getOwner().toString());
+        mapping.put("chest.left.location", left.getLocation().toBlockLocation().serialize());
+        mapping.put("chest.right.location", hasSecondChest() ? right.getLocation().toBlockLocation().serialize() : null);
+        mapping.put("sign.face", signFace);
+        mapping.put("sign.state", signState);
+        mapping.put("sign.location", getLocationOfSign().toBlockLocation().serialize());
+        if (hasOwner()) {
+            mapping.put("owner", getOwner().toString());
         }
-        if (hasMaterialKey()){
-            mapping.put("material",getMaterialKey().name());
+        if (hasMaterialKey()) {
+            mapping.put("material", getMaterialKey().name());
         }
-        if (hasVaultIndex()){
-            mapping.put("index",getVaultIndex());
+        if (hasVaultIndex()) {
+            mapping.put("index", getVaultIndex());
         }
 
         return mapping;
     }
+
     public static VaultPDContainer getVaultContainerByBlock(Player player, Block block, boolean checkRegistered) {
-        if (block.getState() instanceof InventoryHolder holder && !checkRegistered){
+        if (block.getState() instanceof InventoryHolder holder && !checkRegistered) {
             return new VaultPDContainer(holder);
-        }
-        else if (checkRegistered){
+        } else if (checkRegistered) {
             for (VaultInstance vaultInstance : PlayerData.get(player.getUniqueId()).getVaults().values()) {
-                if (block.getState() instanceof Container container){
-                    if (vaultInstance.getContainer().hasSecondChest() && !(container.getInventory().getHolder() instanceof DoubleChest doubleChest)){
+                if (block.getState() instanceof Container container) {
+                    if (vaultInstance.getContainer().hasSecondChest() && !(container.getInventory().getHolder() instanceof DoubleChest doubleChest)) {
                         continue;
                     }
-                    if (container.getInventory().equals(vaultInstance.getContainer().getInventory())){
+                    if (container.getInventory().equals(vaultInstance.getContainer().getInventory())) {
                         return vaultInstance.getContainer();
                     }
                     continue;
@@ -314,20 +320,31 @@ public class VaultPDContainer implements ConfigurationSerializable, Invalidatabl
         }
         return null;
     }
-    public void updateSignText(boolean lock){
+
+    public void updateSignText(boolean lock) {
         if (hasSign()) {
-            if (getSign() == null){
+            if (getSign() == null) {
                 ResourceVaults.error("Problem with Sign instance of " + getVaultIndex() + " in " + Bukkit.getPlayer(getOwner()).getName());
                 return;
             }
-            getSign().setLine(0, ChatColor.GREEN + "[Resources]");
-            getSign().setLine(1,ChatColor.GREEN + getMaterialKey().name());
-            getSign().setLine(2, ChatColor.GREEN + Bukkit.getPlayer(getOwner()).getName());
-            getSign().setLine(3, ChatColor.GREEN + String.valueOf(getVaultIndex()));
-            getSign().setEditable(!lock);
-            getSign().setGlowingText(lock);
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    getSign().setLine(0, ChatColor.GREEN + "[Resources]");
+                    getSign().setLine(1, ChatColor.GREEN + getMaterialKey().name());
+                    getSign().setLine(2, ChatColor.GREEN + Bukkit.getPlayer(getOwner()).getName());
+                    getSign().setLine(3, ChatColor.GREEN + String.valueOf(getVaultIndex()));
+                    getSign().setEditable(!lock);
+                    getSign().setGlowingText(lock);
+                    getSign().update(true);
+                }
+            }.runTask(ResourceVaults.getPlugin());
+        }
+        else {
+            ResourceVaults.error("No Sign on Updater");
         }
     }
+
 
     public void saveToBlock(VaultMetadata vaultMetadata){
         setVaultIndex(vaultMetadata.getVaultIndex());

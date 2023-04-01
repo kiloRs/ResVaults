@@ -22,6 +22,8 @@ import static com.thepaperraven.ai.player.PlayerDataFileHandler.save;
 @SerializableAs("playerData")
 public class PlayerData implements ConfigurationSerializable{
     private final Map<Integer, VaultInstance> vaults = new HashMap<>();
+    @Getter
+    private final PlayerDataMathHandler mathHandler;
     private final UUID uuid;
     private final boolean loadOnCreate;
     private final PlayerConfiguration config;
@@ -37,6 +39,47 @@ public class PlayerData implements ConfigurationSerializable{
         this.loadOnCreate = loadOnCreate;
         this.config = new PlayerConfiguration(uuid);
         this.player = Bukkit.getPlayer(uuid);
+        this.mathHandler = new PlayerDataMathHandler() {
+            private int total;
+            private int totalVaults;
+            @Override
+            public int getTotalItems() {
+                total = 0;
+                vaults.forEach((integer, vaultInstance) -> {
+                    total +=vaultInstance.getInventory().getCount();
+                });
+                return total;
+            }
+
+            @Override
+            public int getTotalItems(Material material) {
+                total = 0;
+                vaults.forEach((integer, vaultInstance) -> {
+                    if (material == vaultInstance.getContainer().getMaterialKey()){
+                        total +=vaultInstance.getInventory().getCount();
+                    }
+                });
+                return total;
+            }
+
+            @Override
+            public int getTotalVaults() {
+                totalVaults = vaults.size();
+                return totalVaults;
+            }
+
+            @Override
+            public int getTottalVaults(Material material) {
+                totalVaults = 0;
+                vaults.forEach((integer, vaultInstance) -> {
+                    if (vaultInstance.getContainer().getMaterialKey()==material){
+                        totalVaults++;
+                    }
+                });
+
+                return totalVaults;
+            }
+        };
     }
 
     public static PlayerData get(UUID uniqueId) {
@@ -45,14 +88,11 @@ public class PlayerData implements ConfigurationSerializable{
 
 
     public VaultInstance getVault(int index) {
-        if (index == 0  && !getVaults().isEmpty()){
-            return vaults.get(1);
-        }
         return vaults.get(index);
     }
 
     public boolean hasVault(int index) {
-        return vaults.containsKey(index)&&index>0;
+        return vaults.containsKey(index);
     }
 
     public boolean hasVault(VaultInstance i){
@@ -115,7 +155,7 @@ public class PlayerData implements ConfigurationSerializable{
             VaultInstance vault = vaults.remove(index);
             vault.removeFromBlock(true,true);
             if (invalidate){
-                vault.invalidate();;
+                vault.invalidate();
                 ResourceVaults.log("Invalidating....");
             }
             ResourceVaults.log("Removing Vault: " + vault.getMetadata().getVaultIndex()+ " from " + Bukkit.getPlayer(vault.getMetadata().getOwnerUUID()).getName());
@@ -141,18 +181,8 @@ public class PlayerData implements ConfigurationSerializable{
         return data;
     }
 
-    public static PlayerData deserialize(UUID fileUUID,Map<String, Object> args) {
-        Map<Integer,VaultInstance> serializedVaults = (Map<Integer,VaultInstance>) args.getOrDefault("vaults",new HashMap<>());
-        PlayerData playerData = new PlayerData(fileUUID); // dummy UUID
-        playerData.setVaults(serializedVaults);
-        return playerData;
 
-    }
-
-    public static void registerVault(VaultInstance vault) throws Exception {
-        if (!vault.isValid()){
-            throw new Exception("Invalid Vault Exception!");
-        }
+    public static void registerVault(VaultInstance vault) {
         if (vault.save()) {
             ResourceVaults.log("Registration Complete: " + vault.getMetadata().getVaultIndex());
             save(vault.getOwnerData());
@@ -186,7 +216,7 @@ public class PlayerData implements ConfigurationSerializable{
             return false;
         }
         vaults.put(i.getMetadata().getVaultIndex(),i);
-        return vaults.containsKey(i.getMetadata().getVaultIndex());
+        return true;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.thepaperraven.ai.player;
 
+import com.jeff_media.jefflib.NumberUtils;
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.vault.VaultInstance;
 import com.thepaperraven.config.PlayerConfiguration;
@@ -13,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,11 +27,11 @@ public class PlayerDataFileHandler implements Listener {
     @Getter
     private final Plugin vaults;
 
-    public PlayerDataFileHandler(ResourceVaults vaults) {
+    public PlayerDataFileHandler(JavaPlugin vaults) {
         this.vaults = vaults;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onLeave(PlayerQuitEvent e){
         PlayerData playerData = new PlayerData(e.getPlayer().getUniqueId());
 
@@ -41,7 +43,7 @@ public class PlayerDataFileHandler implements Listener {
             throw new RuntimeException(ex);
         }
     }
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent e){
         PlayerData playerData = load(e.getPlayer().getUniqueId());
 
@@ -56,7 +58,7 @@ public class PlayerDataFileHandler implements Listener {
     public static Map<String, Object> serializeVaultInstances(Map<Integer, VaultInstance> vaultInstances) {
         Map<String, Object> serializedVaultInstances = new HashMap<>();
         for (Map.Entry<Integer, VaultInstance> entry : vaultInstances.entrySet()) {
-            String key = "vault" + entry.getKey();
+            String key = Integer.toString(entry.getKey());
             VaultInstance value = entry.getValue();
             serializedVaultInstances.put(key, value.serialize());
         }
@@ -67,11 +69,13 @@ public class PlayerDataFileHandler implements Listener {
         Map<Integer, VaultInstance> vaultInstances = new HashMap<>();
         for (Map.Entry<String, Object> entry : serializedVaultInstances.entrySet()) {
             String key = entry.getKey();
-            if (key.startsWith("vault")) {
-                Integer index = Integer.parseInt(key.substring(5));
+            if (NumberUtils.isInteger(key)){
+                if (Integer.parseInt(key) > 0) {
+                Integer index = Integer.parseInt(key);
                 ConfigurationSection section = (ConfigurationSection) entry.getValue();
                 VaultInstance vaultInstance = (VaultInstance) ConfigurationSerialization.deserializeObject(section.getValues(false),VaultInstance.class);
                 vaultInstances.put(index, vaultInstance);
+            }
             }
         }
         return vaultInstances;

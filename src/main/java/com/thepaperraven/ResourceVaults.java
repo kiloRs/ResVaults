@@ -6,13 +6,13 @@ import com.thepaperraven.ai.player.PlayerDataFileHandler;
 import com.thepaperraven.ai.vault.VaultInstance;
 import com.thepaperraven.ai.vault.VaultMetadata;
 import com.thepaperraven.ai.vault.VaultPDContainer;
+import com.thepaperraven.commands.Command;
 import com.thepaperraven.config.Placeholder;
-import com.thepaperraven.listeners.VaultBreakListener;
-import com.thepaperraven.listeners.VaultInteractionListener;
-import com.thepaperraven.listeners.VaultRegistrationListener;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -46,7 +46,9 @@ public class ResourceVaults extends JavaPlugin {
         plugin.reloadConfig();
 
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            PlayerDataFileHandler.save(PlayerData.get(onlinePlayer.getUniqueId()));
+            if (savePlayersFirst) {
+                PlayerDataFileHandler.save(PlayerData.get(onlinePlayer.getUniqueId()));
+            }
             PlayerData d = PlayerDataFileHandler.load(onlinePlayer.getUniqueId());
 
             if (d.getVaults().size()>0){
@@ -76,6 +78,10 @@ public class ResourceVaults extends JavaPlugin {
         // Register listeners!
         registerListeners(this);
 
+        PluginCommand rv = Bukkit.getPluginCommand("rv");
+        if (rv != null){
+            rv.setExecutor(new Command());
+        }
         getLogger().info("ResourceVaults plugin enabled!");
 
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -125,10 +131,9 @@ public class ResourceVaults extends JavaPlugin {
 
     }
     private void registerListeners(JavaPlugin plugin) {
-        plugin.getServer().getPluginManager().registerEvents(new VaultBreakListener(),plugin);
-        plugin.getServer().getPluginManager().registerEvents(new VaultInteractionListener(this), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new VaultRegistrationListener(this), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new PlayerDataFileHandler(this), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultCreationListener(),plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultInteractionListener(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new PlayerDataFileHandler(plugin), plugin);
     }
 
     public static PlayerData getPlayerData(UUID own) {
@@ -148,5 +153,13 @@ public class ResourceVaults extends JavaPlugin {
             playerDataFolder.mkdirs();
             log("Creating PlayerData Folder");
         }
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, org.bukkit.command.@NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (command.getLabel().equalsIgnoreCase("rv")){
+            return new Command().onCommand(sender, command, label, args);
+        }
+        return super.onCommand(sender, command, label, args);
     }
 }

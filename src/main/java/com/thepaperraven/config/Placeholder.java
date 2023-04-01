@@ -27,7 +27,10 @@ public class Placeholder extends PlaceholderExpansion {
     @Override
     public String onPlaceholderRequest(Player player, @NotNull String identifier) {
         if (player == null) {
-            return "";
+            return null;
+        }
+        if (identifier.isEmpty()){
+            return null;
         }
 
         // Get the player's data
@@ -35,6 +38,8 @@ public class Placeholder extends PlaceholderExpansion {
 
         // Placeholder: %myplugin_total_vaults%
         if (identifier.equals("total_vaults")) {
+            int totalVaults = playerData.getMathHandler().getTotalVaults();
+            return Integer.toString(totalVaults);
 //            return ResourceVaults.getVaultManager().getTotalVaults(player.getUniqueId()) + "";
         }
 
@@ -43,23 +48,22 @@ public class Placeholder extends PlaceholderExpansion {
             String material = identifier.substring(14).toUpperCase();
             Material mats = Material.matchMaterial(material);
             if (mats != null){
-                int total = playerData.getVaultsByMaterial(mats).size();
+                int total = playerData.getMathHandler().getTottalVaults(mats);
                 return Integer.toString(total);
             }
         }
 
         // Placeholder: %myplugin_total_items%
-//        if (identifier.equals("total_items")) {
-//            return Integer.toString(ResourceVaults.getVaultManager().getBalance(player.getUniqueId()));
-//        }
+        if (identifier.equals("total_items")) {
+            return Integer.toString(playerData.getMathHandler().getTotalItems());
+        }
 
         // Placeholder: %myplugin_total_[material]%
         if (identifier.startsWith("total_")) {
             String material = identifier.substring(6).toUpperCase();
-            Material mats = Material.getMaterial(material);
+            Material mats = Material.matchMaterial(material);
             if (mats != null){
-//                int total = ResourceVaults.getVaultManager().getTotalVaults(mats,player.getUniqueId());
-//                return Integer.toString(total);
+                return String.valueOf(playerData.getMathHandler().getTotalItems(mats));
             }
             else {
                 ResourceVaults.log("Placeholder has invalid Material name: " + material);

@@ -1,12 +1,15 @@
 package com.thepaperraven.config;
 
 import com.thepaperraven.ResourceVaults;
+import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.ai.player.PlayerDataFileHandler;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 public class PlayerConfiguration extends YamlConfiguration {
@@ -22,8 +25,14 @@ public class PlayerConfiguration extends YamlConfiguration {
         this.plugin = plugin;
         this.playerUUID = playerUUID;
         this.configFile = new File(plugin.getDataFolder() + "/playerdata/" + playerUUID + ".yml");
+        save();
     }
 
+    public void saveVaults(){
+        Map<String, Object> serializeMap = PlayerDataFileHandler.serializeVaultInstances(PlayerData.get(playerUUID).getVaults());
+
+
+    }
     public File getFile(){
         return new File(ResourceVaults.getPlugin().getDataFolder(),"/playerdata/" + playerUUID.toString() + ".yml");
     }
