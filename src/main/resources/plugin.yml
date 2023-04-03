@@ -1,5 +1,5 @@
 name: ResourceVaults
-version: 2.5
+version: 2.8
 main: com.thepaperraven.ResourceVaults
 api-version: 1.18
 author: Kilo
@@ -8,6 +8,18 @@ commands:
   rv:
     description: Main command for ResourceVaults.
     usage: /rv <subcommand> [args...]
+  rvreload:
+    description: "Reload the plugin!"
+    usage: /rvreload <true/false>  (Defaults to true - if true, saves playerdata during reload)
+  rvcreate:
+    description: "Create a vault!"
+    usage: /rvcreate <material> (While looking at a non-vault chest)
+  rvdeposit:
+    description: "Deposit"
+    usage: /rvdeposit <material> <amount>
+  rvwithdraw:
+    description: "Withdraw"
+    usage: /rvwithdraw <material> <amount>
 permissions:
   rv.admin:
     description: Grants access to all ResourceVaults commands.

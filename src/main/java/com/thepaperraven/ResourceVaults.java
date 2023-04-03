@@ -1,15 +1,20 @@
 package com.thepaperraven;
 
 import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.ai.player.PlayerDataFileHandler;
-import com.thepaperraven.ai.vault.VaultInstance;
-import com.thepaperraven.commands.Command;
+import com.thepaperraven.commands.RVCreateVaultCommand;
+import com.thepaperraven.commands.RVDepositCommand;
+import com.thepaperraven.commands.RVReloadCommand;
+import com.thepaperraven.commands.RVWithdrawCommand;
+import com.thepaperraven.config.GeneralConfiguration;
 import com.thepaperraven.config.Placeholder;
+import com.thepaperraven.listeners.PlayerDataFileHandler;
 import com.thepaperraven.listeners.VaultInventoryListener;
+import com.thepaperraven.listeners.VaultSignProtectionListener;
+import com.thepaperraven.utils.RVLogger;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
+import org.bukkit.ChatColor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -17,7 +22,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -27,10 +31,14 @@ import java.util.logging.Logger;
 public class ResourceVaults extends JavaPlugin {
 
 
-    public static Material DEFAULT_MATERIAL = Material.WHEAT;
-    @Getter
-    public static Material[] validMaterials = new Material[]{Material.WHEAT,Material.LEATHER,Material.STONE};
+//    public static Material DEFAULT_MATERIAL = Material.WHEAT;
+//    @Getter
+//    public static Material[] validMaterials = new Material[]{Material.WHEAT,Material.LEATHER,Material.STONE};
 
+    public static String PREFIX;
+    public static GeneralConfiguration getConfiguration(){
+        return new GeneralConfiguration(getPlugin().getConfig());
+    }
     @Getter
     private static Plugin plugin;
 //    private static IconManager iconManager;
@@ -43,31 +51,21 @@ public class ResourceVaults extends JavaPlugin {
         Logger.getLogger("Minecraft").severe("[ResourceVaults] " + error);
     }
 
-    public static void reloadPlugin(boolean logPl){
+    public static void reloadPlugin(boolean savePlayersFirst){
         Bukkit.savePlayers();
 
         plugin.reloadConfig();
 
+
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            PlayerData.get(onlinePlayer.getUniqueId()).getVaults().forEach((integer, vaultInstance) -> {
-                vaultInstance.save();
-            });
-            if (logPl){
-                ResourceVaults.log("Saving " + onlinePlayer.getName() + "'s Vaults!");
-                continue;
+            if (savePlayersFirst) {
+                VaultManager.savePlayerVaults(onlinePlayer);
             }
+            VaultManager.loadPlayerVaults(onlinePlayer);
         }
 
 
 
-    }
-
-    @NotNull
-    public static PlayerData getOwnerOf(@NotNull VaultInstance v) {
-        if (!v.getContainer().hasOwner()){
-            return new PlayerData(v.getMetadata().getOwnerUUID());
-        }
-        return new PlayerData(v.getContainer().getOwner());
     }
 
     @Override
@@ -78,16 +76,11 @@ public class ResourceVaults extends JavaPlugin {
         createPlayerDataFolder();
         // Register listeners!
         registerListeners(this);
-
-        DEFAULT_MATERIAL = Material.matchMaterial(getConfig().getString("types.defaults","WHEAT"));
-
-        PluginCommand rv = Bukkit.getPluginCommand("rv");
-        if (rv != null){
-            rv.setExecutor(new Command());
-            ResourceVaults.log("Registered Commands of RV");
-        }
+        registerCommands();
         getLogger().info("ResourceVaults plugin enabled!");
 
+        PREFIX= getConfiguration().getPREFIX()!=null? getConfiguration().getPREFIX() :  ChatColor.GRAY + "[" + ChatColor.YELLOW + "ResourceVaults" + ChatColor.GRAY + "]";
+        saveConfig();
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             log("PAPI not enabled?");
             return;
@@ -101,6 +94,7 @@ public class ResourceVaults extends JavaPlugin {
             throw new RuntimeException(e);
         }
         saveConfig();
+
     }
 
     @NotNull
@@ -118,22 +112,37 @@ public class ResourceVaults extends JavaPlugin {
 
         savePlayers();
     }
+    private void registerCommands() {
+        PluginCommand create = getCommand("rvcreate");
+        PluginCommand command = getCommand("rvdeposit");
+        PluginCommand withdraw = getCommand("rvwithdraw");
+        PluginCommand reload = getCommand("rvreload");
 
+        if (reload != null){
+            reload.setExecutor(new RVReloadCommand());
+        }
+        if (create != null) {
+            create.setExecutor(new RVCreateVaultCommand(this));
+        }
+        if (command != null) {
+            command.setExecutor(new RVDepositCommand());
+        }
+        if (withdraw != null){
+        withdraw.setExecutor(new RVWithdrawCommand());
+    }
+    }
     private static void savePlayers() {
         for (Player onlinePlayer : Bukkit.getServer().getOnlinePlayers()) {
-            PlayerData playerData = PlayerData.get(onlinePlayer.getUniqueId());
-
-            for (Map.Entry<Integer, VaultInstance> entry : playerData.getVaults().entrySet()) {
-                Integer integer = entry.getKey();
-                VaultInstance vaultInstance = entry.getValue();
-                vaultInstance.save();
-            }
+            VaultManager.savePlayerVaults(onlinePlayer);
         }
     }
 
     private void registerListeners(JavaPlugin plugin) {
         plugin.getServer().getPluginManager().registerEvents(new VaultInventoryListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new PlayerDataFileHandler(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new VaultSignProtectionListener(plugin),plugin);
+
+        ResourceVaults.error("Registered all known listeners of RV!");
     }
 
     public static PlayerData getPlayerData(UUID own) {

@@ -2,10 +2,11 @@ package com.thepaperraven.ai.gui;
 
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.ai.vault.VaultCommandMeta;
-import com.thepaperraven.ai.vault.VaultInstance;
-import com.thepaperraven.ai.vault.VaultPDContainer;
+import com.thepaperraven.ai.vault.PDC;
+import com.thepaperraven.ai.vault.Vault;
 import lombok.Getter;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -22,18 +23,15 @@ import java.util.UUID;
 @Getter
 public class VaultInventory implements InventoryHolder {
     private final Inventory inventory;
-    private final VaultPDContainer container;
-    private final VaultCommandMeta metadata;
+    private final PDC container;
     private final Map<Integer,ItemStack> cache = new HashMap<Integer, ItemStack>();
     private final boolean valid = true;
 
 
-    public VaultInventory(VaultPDContainer container, VaultCommandMeta metadata) {
-        this.inventory = container.getInventory();
-        this.container = container;
-        this.metadata = metadata;
+    public VaultInventory(Vault vault) {
+        this.inventory = Bukkit.createInventory(this, getContainer().hasSecondChest()?54:27, "Vault " + vault.getVaultIndex());
+        this.container = vault.getContainer();
     }
-
 
 
     @Override
@@ -65,7 +63,7 @@ public class VaultInventory implements InventoryHolder {
     }
     public int add(int amount) {
         int overflowAmount = 0;
-        Material allowedMaterial = metadata.getAllowedMaterial();
+        Material allowedMaterial = container.getMaterialKey();
         ItemStack itemStack = new ItemStack(allowedMaterial, amount);
 
         for (int i = 0; i < inventory.getSize(); i++) {
@@ -92,55 +90,6 @@ public class VaultInventory implements InventoryHolder {
         return amount;
     }
 
-    public void setSlot(int slot, int amount) {
-        Material allowedMaterial = metadata.getAllowedMaterial();
-        if (amount == 0){
-            inventory.setItem(slot,new ItemStack(Material.AIR));
-            return;
-        }
-        ItemStack itemStack = new ItemStack(allowedMaterial, amount);
-        inventory.setItem(slot, itemStack);
-    }
-
-    public void remove(int amount) {
-        Material allowedMaterial = metadata.getAllowedMaterial();
-        ItemStack itemStack = new ItemStack(allowedMaterial, amount);
-        inventory.removeItem(itemStack);
-    }
-    public void syncFromChest() {
-        Inventory chestInventory = getLinkedChestInventory();
-        for (int i = 0; i < inventory.getSize(); i++) {
-            ItemStack itemBeingTrans = chestInventory.getItem(i);
-            if (itemBeingTrans == null){
-                continue;
-            }
-            if (itemBeingTrans.getType()!=metadata.getAllowedMaterial()){
-                chestInventory.remove(itemBeingTrans);
-                continue;
-            }
-            inventory.setItem(i, itemBeingTrans);
-        }
-    }
-
-    public void syncToChest() {
-        Inventory chestInventory = getLinkedChestInventory();
-        for (int i = 0; i < inventory.getSize(); i++) {
-            ItemStack item = inventory.getItem(i);
-            if (item == null){
-                continue;
-            }
-            if (item.getType()!=metadata.getAllowedMaterial()){
-                inventory.remove(item);
-                continue;
-            }
-            chestInventory.setItem(i, item);
-        }
-    }
-
-    private @NotNull Inventory getLinkedChestInventory() {
-        return container.getInventory();
-    }
-
     public int getRemainingAmountOfFreeSlots(){
         return getRemainingAmountOfFreeSpace() / inventory.getMaxStackSize();
     }
@@ -159,7 +108,7 @@ public class VaultInventory implements InventoryHolder {
             if (itemStack == null){
                 continue;
             }
-            if (metadata.getAllowedMaterial() != itemStack.getType()){
+            if (container.getMaterialKey() != itemStack.getType()){
                 inventory.remove(itemStack);
                 continue;
             }
@@ -172,23 +121,37 @@ public class VaultInventory implements InventoryHolder {
     public void open(){
         if (container.hasOwner()) {
             UUID owner = container.getOwner();
-            syncFromChest();
             Bukkit.getPlayer(owner).openInventory(getInventory());
         }
     }
     public void close(){
         UUID owner = container.getOwner();
-        syncToChest();
         Bukkit.getPlayer(owner).closeInventory(InventoryCloseEvent.Reason.PLUGIN);
     }
 
     public static void open(Player player, int x){
-        VaultInstance vault = PlayerData.get(player.getUniqueId()).getVault(x);
+        Vault vault = PlayerData.get(player.getUniqueId()).getVaults().get(x);
         if (vault == null){
             ResourceVaults.error("No Open Allowed");
             return;
         }
-        vault.getInventory().open();
+        vault.getVaultInventory().open();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        VaultInventory that = (VaultInventory) o;
+
+        return new EqualsBuilder().appendSuper(true).append(inventory, that.inventory).isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(inventory).toHashCode();
     }
 }
 

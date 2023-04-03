@@ -1,36 +1,47 @@
 package com.thepaperraven.ai.vault;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
-import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.ContainerType;
+import com.thepaperraven.VaultManager;
+import com.thepaperraven.config.VaultKeys;
 import com.thepaperraven.utils.LocationUtils;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.*;
-import org.bukkit.entity.Player;
+import org.bukkit.block.Chest;
+import org.bukkit.block.Container;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Date;
 import java.util.UUID;
 
 import static com.thepaperraven.config.VaultKeys.*;
-import static com.thepaperraven.utils.InventoryUtil.createSign;
-import static com.thepaperraven.utils.InventoryUtil.getFacing;
 
 @Getter
-public class VaultPDContainer{
+public class PDC {
     private final Container left;
     private Chest right = null;
     private final InventoryHolder blockHolder;
     private final boolean valid = true;
     private final boolean signsExisting = false;
+    private ContainerType containerType;
 
 
-    public VaultPDContainer(@NotNull InventoryHolder holder) {
+    public static PDC getPDCOfDoubleChest(@NotNull Location one,@NotNull Location two){
+        if (one.toBlockLocation().getBlock().getState() instanceof Chest container && two.toBlockLocation().getBlock().getState() instanceof Chest chest){
+            if (container.getBlockInventory().getHolder() instanceof DoubleChest doubleChest && chest.getBlockInventory().getHolder() instanceof Chest chest1){
+                return new PDC(doubleChest);
+            }
+        }
+        return null;
+    }
+    public PDC(@NotNull InventoryHolder holder) {
         if (holder instanceof DoubleChest doubleChest) {
             this.blockHolder = doubleChest;
             this.left = ((Chest) doubleChest.getLeftSide().getInventory().getLocation().getBlock().getState());
@@ -40,6 +51,7 @@ public class VaultPDContainer{
         } else if (holder instanceof Chest chestInventoryHolder) {
             this.blockHolder = chestInventoryHolder;
             this.left = ((Chest) chestInventoryHolder.getBlock().getState());
+            this.containerType = ContainerType.CHEST;
         } else if (holder instanceof Container container) {
             this.blockHolder = container;
             this.left = ((Container) container.getBlock().getState());
@@ -48,8 +60,8 @@ public class VaultPDContainer{
         }
     }
 
-    public static VaultPDContainer get(Container container) {
-        return new VaultPDContainer(container);
+    public static PDC get(Container container) {
+        return new PDC(container);
     }
 
     public void setMaterialKey(Material material) {
@@ -145,40 +157,7 @@ public class VaultPDContainer{
         }
         return hasMaterialKey() && hasOwner() && hasVaultIndex();
     }
-    public static VaultPDContainer getVaultContainerByBlock(Player player, Block block, boolean checkRegistered) {
-        if (block.getState() instanceof InventoryHolder holder && !checkRegistered) {
-            return new VaultPDContainer(holder);
-        } else if (checkRegistered) {
-            for (VaultInstance vaultInstance : PlayerData.get(player.getUniqueId()).getVaults().values()) {
-                if (block.getState() instanceof Container container) {
-                    if (vaultInstance.getContainer().hasSecondChest() && !(container.getInventory().getHolder() instanceof DoubleChest doubleChest)) {
-                        continue;
-                    }
-                    if (container.getInventory().equals(vaultInstance.getContainer().getInventory())) {
-                        return vaultInstance.getContainer();
-                    }
-                    continue;
-                }
-            }
-        }
-        return null;
-    }
 
-
-    public void saveToBlock(@NotNull VaultCommandMeta vaultCommandMetaMetadata){
-        setVaultIndex(vaultCommandMetaMetadata.getVaultIndex());
-        setOwner(vaultCommandMetaMetadata.getOwnerUUID());
-        setMaterialKey(vaultCommandMetaMetadata.getAllowedMaterial());
-
-        BlockFace f = getFacing(left.getBlock());
-        BlockFace facing = f !=null? f :BlockFace.NORTH;
-
-        if (hasSecondChest()){
-            createSign(right.getBlock().getRelative(facing), vaultCommandMetaMetadata.getAllowedMaterial().name(), Bukkit.getPlayer(vaultCommandMetaMetadata.getOwnerUUID()).getName(), vaultCommandMetaMetadata.getVaultIndex(),facing);
-        }
-        createSign(left.getBlock().getRelative(facing), vaultCommandMetaMetadata.getAllowedMaterial().name(), Bukkit.getPlayer(vaultCommandMetaMetadata.getOwnerUUID()).getName(), vaultCommandMetaMetadata.getVaultIndex(),facing);
-
-        }
     public void removeFromBlock() {
         left.getPersistentDataContainer().remove(getOwnerKey());
         left.getPersistentDataContainer().remove(getIndexKey());
@@ -188,23 +167,83 @@ public class VaultPDContainer{
             right.getPersistentDataContainer().remove(getIndexKey());
             right.getPersistentDataContainer().remove(getMaterialTypeKey());
         }
+    }
+    public void setSignsExisting(boolean exists) {
+        left.getPersistentDataContainer().set(getSignsKey(), DataType.BOOLEAN, exists);
+        if (hasSecondChest()) {
+            right.getPersistentDataContainer().set(getSignsKey(), DataType.BOOLEAN, exists);
+        }
+    }
 
+    public boolean hasSigns() {
+//        boolean hasSigns = left.getPersistentDataContainer().has(getSignsKey(), DataType.BOOLEAN);
+//        if (hasSecondChest()) {
+//            hasSigns &= right.getPersistentDataContainer().has(getSignsKey(), DataType.BOOLEAN)
+//                    && right.getPersistentDataContainer().get(getSignsKey(), DataType.BOOLEAN) == left.getPersistentDataContainer().get(getSignsKey(), DataType.BOOLEAN);
+//        }
+//        return hasSigns ||;
+
+        return VaultManager.hasResourcesSign(left.getBlock());
 
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        VaultPDContainer that = (VaultPDContainer) o;
-
-        return new EqualsBuilder().append(left, that.left).append(right, that.right).append(blockHolder, that.blockHolder).isEquals();
+    public boolean signsExist() {
+        return left.getPersistentDataContainer().getOrDefault(getSignsKey(), DataType.BOOLEAN, false);
     }
 
-    @Override
+    public boolean isValid() {
+        return valid;
+    }
+
+    public boolean isDoubleChest() {
+        return blockHolder instanceof DoubleChest;
+    }
+
+    public Chest getRightChest() {
+        return right;
+    }
+
+    public void setRightChest(Chest chest) {
+        right = chest;
+    }
+
+    public boolean equals(Object other) {
+        if (!(other instanceof PDC pdc)) {
+            return false;
+        }
+        return new EqualsBuilder()
+                .append(left.getLocation(), pdc.left.getLocation())
+                .append(right == null ? null : right.getLocation(), pdc.right == null ? null : pdc.right.getLocation())
+                .isEquals();
+    }
+
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(left).append(right).append(blockHolder).toHashCode();
+        return new HashCodeBuilder(17, 37)
+                .append(left.getLocation())
+                .append(right == null ? null : right.getLocation())
+                .toHashCode();
+    }
+
+
+    public void unlock(){
+        left.setLock(null);
+        if (hasSecondChest()){
+            right.setLock(null);
+        }
+    }
+    public void update() {
+        left.setLock(getOwner().toString());
+        left.update();
+        if (hasSecondChest()){
+            right.setLock(getOwner().toString());
+            right.update();
+        }
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.left.getPersistentDataContainer().set(VaultKeys.getCreatedDateKey(),DataType.DATE, new Date(createdDate));
+        if (hasSecondChest()){
+            this.right.getPersistentDataContainer().set(VaultKeys.getCreatedDateKey(),DataType.DATE,new Date(createdDate));
+        }
     }
 }

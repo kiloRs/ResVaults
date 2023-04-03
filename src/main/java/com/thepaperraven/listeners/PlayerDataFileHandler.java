@@ -1,5 +1,7 @@
-package com.thepaperraven.ai.player;
+package com.thepaperraven.listeners;
 
+import com.thepaperraven.ResourceVaults;
+import com.thepaperraven.VaultManager;
 import lombok.Getter;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,22 +22,15 @@ public class PlayerDataFileHandler implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLeave(PlayerQuitEvent e){
-        PlayerData playerData = new PlayerData(e.getPlayer().getUniqueId());
-
-        playerData.getVaults().forEach((integer, vaultInstance) -> vaultInstance.save());
+        VaultManager.savePlayerVaults(e.getPlayer());
+        ResourceVaults.log("LEAVE: Saving Player Data...");
     }
 
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent e){
-        PlayerData playerData = new PlayerData(e.getPlayer().getUniqueId());
-
-        if (playerData.getVaults().isEmpty()){
-            playerData.getPlayer().sendRawMessage("No Vaults Loaded");
-        }
-        else {
-            playerData.getPlayer().sendRawMessage("Vaults Loaded: " + playerData.getVaults().size());
-        }
+        VaultManager.loadPlayerVaults(e.getPlayer());
+        ResourceVaults.error("JOIN: Loading Player Data....");
     }
 
 

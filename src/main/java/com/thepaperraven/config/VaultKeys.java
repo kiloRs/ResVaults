@@ -8,7 +8,6 @@ import static com.thepaperraven.ResourceVaults.getPlugin;
 /**
  * Contains all the NameSpacedKeys required in the ResourceVaults plugin!
  */
-@Getter
 public class VaultKeys {
 //    /**
 //     * Used in the VaultGUI class, a list showing each of the Vaults of a PlayerData. The back key is the back page button's PDC storage key!
@@ -30,6 +29,9 @@ public class VaultKeys {
     private static final NamespacedKey materialTypeKey= new NamespacedKey(getPlugin(), "vault_material_type");
     @Getter
     private static final NamespacedKey indexKey= new NamespacedKey(getPlugin(), "vault_index");
-
+    @Getter
+    private static final NamespacedKey signsKey = new NamespacedKey(getPlugin(),"vault_has_sign");
+    @Getter
+    private static final NamespacedKey createdDateKey = new NamespacedKey(getPlugin(),"vault_created_date");
 
 }

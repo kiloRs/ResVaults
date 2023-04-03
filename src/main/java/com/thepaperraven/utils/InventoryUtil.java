@@ -3,25 +3,25 @@ package com.thepaperraven.utils;
 import com.thepaperraven.ResourceVaults;
 import com.thepaperraven.ai.gui.VaultInventory;
 import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.ai.vault.VaultInstance;
-import com.thepaperraven.ai.vault.VaultPDContainer;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import com.thepaperraven.ai.vault.PDC;
+import com.thepaperraven.ai.vault.Vault;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Container;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Rotatable;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.inventory.Inventory;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class InventoryUtil {
 
     public static boolean isValidMaterial(Material material) {
-        for (Material validMaterial : ResourceVaults.validMaterials) {
+        for (Material validMaterial : ResourceVaults.getConfiguration().getAllowedMaterials()) {
             if (material == validMaterial) {
                 return true;
             }
@@ -39,17 +39,17 @@ public class InventoryUtil {
 
     public static VaultInventory getVaultInventoryFrom(Location location) {
         if (location.toBlockLocation().getBlock().getState() instanceof Container container) {
-            VaultPDContainer p = new VaultPDContainer(container);
+            PDC p = new PDC(container);
             if (!p.hasKeys()) {
                 ResourceVaults.log("No Inventory Found from : " + LocationUtils.getStringOfLocation(location).toUpperCase());
                 return null;
             }
-            VaultInstance v = VaultInstance.getExistingVaultFrom(location.toBlockLocation());
+            Vault v = Vault.getExistingVaultFrom(location.toBlockLocation());
             if (v == null) {
                 ResourceVaults.log("No Output of VaultInstance!");
                 return null;
             }
-            return v.getInventory();
+            return v.getVaultInventory();
         }
         return null;
     }
@@ -72,12 +72,12 @@ public class InventoryUtil {
 
     }
 
-    public static VaultInstance getInstanceFrom(VaultInventory inventory) {
+    public static Vault getInstanceFrom(VaultInventory inventory) {
         if (!inventory.getContainer().hasKeys()) {
             ResourceVaults.log("VaultInv has no Keys!");
             return null;
         }
-        VaultInstance vault = PlayerData.get(inventory.getContainer().getOwner()).getVault(inventory.getContainer().getVaultIndex());
+        Vault vault = PlayerData.get(inventory.getContainer().getOwner()).getVaults().get(inventory.getContainer().getVaultIndex());
 
         if (vault == null) {
             ResourceVaults.log("No Vault from VaultInv");
@@ -91,20 +91,20 @@ public class InventoryUtil {
     }
 
     public static boolean acceptsMaterial(VaultInventory inventory, Material material) {
-        VaultInstance instanceFrom = getInstanceFrom(inventory);
+        Vault instanceFrom = getInstanceFrom(inventory);
         if (instanceFrom == null) {
-            ResourceVaults.error("Bad Instance of Vault from " + inventory.getMetadata().getVaultIndex());
+            ResourceVaults.error("Bad Instance of Vault from " + inventory.getContainer().getVaultIndex());
             return true;
         }
-        VaultPDContainer c = instanceFrom.getContainer();
+        PDC c = instanceFrom.getContainer();
         if (c == null) {
             return true;
         }
         return c.hasKeys() && c.getMaterialKey() == material;
     }
 
-    public static boolean hasKeys(VaultInstance vaultInstance) {
-        return vaultInstance.getContainer().hasKeys();
+    public static boolean hasKeys(Vault vault) {
+        return vault.getContainer().hasKeys();
     }
 
     public static boolean hasKeys(VaultInventory inventory) {
@@ -133,31 +133,5 @@ public class InventoryUtil {
         return null;
     }
 
-    public static void createSign(Block blockInstance, String materialName, String playerName, int vaultIndex,@NotNull BlockFace face) {
-        blockInstance.setBlockData(Bukkit.createBlockData(Material.BIRCH_WALL_SIGN));
-        if (blockInstance.getState() instanceof Sign sign) {
-            ResourceVaults.log("Sign Creation Started!");
-            if (!(sign.getBlockData() instanceof WallSign wallSign)) {
-                throw new RuntimeException("Invalid Sign");
-            }
-            wallSign.setFacing(face);
-
-            if (Material.matchMaterial(materialName) == null) {
-                        throw new RuntimeException("Material problem or null");
-                    }
-                    sign.setLine(0, ChatColor.BLACK + "[Resources]");
-                    sign.setLine(1,ChatColor.BLACK + materialName.toUpperCase());
-                    sign.setLine(2, ChatColor.BLACK +playerName.toUpperCase());
-                    sign.setLine(3, ChatColor.BLACK +String.valueOf(vaultIndex).toUpperCase());
-                    sign.setGlowingText(true);
-                    sign.setEditable(false);
-                    if (sign.update(true)) {
-                        ResourceVaults.log("Sign Created!");
-                    } else {
-                        ResourceVaults.log("No Sign Creation?");
-                    }
-                }
-
-    }
 }
 

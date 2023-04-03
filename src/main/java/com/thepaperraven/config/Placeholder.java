@@ -38,7 +38,7 @@ public class Placeholder extends PlaceholderExpansion {
 
         // Placeholder: %myplugin_total_vaults%
         if (identifier.equals("total_vaults")) {
-            int totalVaults = playerData.getMathHandler().getTotalVaults();
+            int totalVaults = playerData.getTotalHandler().getTotalVaults();
             return Integer.toString(totalVaults);
 //            return ResourceVaults.getVaultManager().getTotalVaults(player.getUniqueId()) + "";
         }
@@ -48,14 +48,14 @@ public class Placeholder extends PlaceholderExpansion {
             String material = identifier.substring(14).toUpperCase();
             Material mats = Material.matchMaterial(material);
             if (mats != null){
-                int total = playerData.getMathHandler().getTotalVaults(mats);
+                int total = playerData.getTotalHandler().getTotalVaults(mats);
                 return Integer.toString(total);
             }
         }
 
         // Placeholder: %myplugin_total_items%
         if (identifier.equals("total_items")) {
-            return Integer.toString(playerData.getMathHandler().getTotalItems());
+            return Integer.toString(playerData.getTotalHandler().getTotalItems());
         }
 
         // Placeholder: %myplugin_total_[material]%
@@ -63,7 +63,7 @@ public class Placeholder extends PlaceholderExpansion {
             String material = identifier.substring(6).toUpperCase();
             Material mats = Material.matchMaterial(material);
             if (mats != null){
-                return String.valueOf(playerData.getMathHandler().getTotalItems(mats));
+                return String.valueOf(playerData.getTotalHandler().getTotalItems(mats));
             }
             else {
                 ResourceVaults.log("Placeholder has invalid Material name: " + material);

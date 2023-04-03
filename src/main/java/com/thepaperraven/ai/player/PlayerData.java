@@ -1,118 +1,88 @@
 package com.thepaperraven.ai.player;
 
-import com.thepaperraven.ResourceVaults;
-import com.thepaperraven.ai.vault.VaultInstance;
+import com.thepaperraven.ai.vault.Vault;
 import com.thepaperraven.config.PlayerConfiguration;
 import lombok.Getter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Getter
-public class PlayerData{
-    private final Map<Integer, VaultInstance> vaults;
-    @Getter
-    private final PlayerDataMathHandler mathHandler;
-    private final UUID uuid;
-    private final boolean loadOnCreate;
+public class PlayerData {
+
+    private final UUID playerUUID;
+    private final TotalHandler totalHandler;
+    private final Map<Integer, Vault> vaults;
     private final PlayerConfiguration config;
-    private final Player player;
 
-    // Other fields and methods for the PlayerData class
-    public PlayerData(UUID uuid) {
-        this(uuid, true);
-    }
-
-    public PlayerData(@NotNull UUID uuid, boolean loadOnCreate) {
-        this.uuid = uuid;
-        this.loadOnCreate = loadOnCreate;
-        this.config = new PlayerConfiguration(uuid);
-        this.player = Bukkit.getPlayer(uuid);
+    public PlayerData(UUID playerUUID) {
+        this.playerUUID = playerUUID;
         this.vaults = new HashMap<>();
-        this.mathHandler = new PlayerDataMathHandler() {
-            private int total;
-            private int totalVaults;
+        this.config = new PlayerConfiguration(this.playerUUID);
+
+        this.totalHandler = new TotalHandler() {
             @Override
             public int getTotalItems() {
-                total = 0;
-                vaults.forEach((integer, vaultInstance) -> {
-                    total +=vaultInstance.getInventory().getCount();
-                });
+                int total = 0;
+                for (Map.Entry<Integer, Vault> entry : vaults.entrySet()) {
+                    Vault vault = entry.getValue();
+                    total = +vault.getAmount();
+                }
                 return total;
             }
 
             @Override
             public int getTotalItems(Material material) {
-                total = 0;
-                vaults.forEach((integer, vaultInstance) -> {
-                    if (material == vaultInstance.getContainer().getMaterialKey()){
-                        total +=vaultInstance.getInventory().getCount();
+                int total = 0;
+                for (Map.Entry<Integer, Vault> entry : vaults.entrySet()) {
+                    if (entry.getValue().getMaterial()==material) {
+                        Vault vault = entry.getValue();
+                        total = +vault.getAmount();
                     }
-                });
+                }
                 return total;
             }
 
             @Override
             public int getTotalVaults() {
-                totalVaults = vaults.size();
-                return totalVaults;
+                return vaults.size();
             }
 
             @Override
             public int getTotalVaults(Material material) {
-                totalVaults = 0;
-                vaults.forEach((integer, vaultInstance) -> {
-                    if (vaultInstance.getContainer().getMaterialKey()==material){
-                        totalVaults++;
+                int total = getTotalVaults();
+                for (Map.Entry<Integer, Vault> entry : vaults.entrySet()) {
+                    Vault vault = entry.getValue();
+                    if (vault.getMaterial() == material) {
+                        continue;
                     }
-                });
-
-                return totalVaults;
+                    total--;
+                }
+                return total;
             }
         };
     }
 
-    public static PlayerData get(UUID uniqueId) {
-        return new PlayerData(uniqueId);
+    public static PlayerData get(UUID owner) {
+        return new PlayerData(owner);
     }
-
-
-    public VaultInstance getVault(int index) {
-        return vaults.getOrDefault(index,null);
+    public void addVault(Vault vault) {
+        vaults.put(vault.getVaultIndex(), vault);
     }
-
-    public boolean hasVault(int index) {
-        return vaults.containsKey(index);
-    }
-
-    public boolean hasVault(VaultInstance i){
-        return vaults.containsValue(i);
-    }
-    public int getNextIndex() {
-        return vaults.size() + 1;
-    }
-
-    /**
-     * @param index The VaultMetadata index (note: always starts at 1, instead of 0 which is natural, so please enter the Vaults internal index.
-     */
-    public void removeVault(int index) {
-        if (index>0) {
-            index = index - 1;
+    public void removeVault(int index){
+        if (!vaults.containsKey(index)) {
+            return;
         }
-        if (vaults.containsKey(index)) {
-            VaultInstance vault = vaults.remove(index);
-            vault.removeFromBlock();
-            ResourceVaults.log("Removing Vault: " + vault.getMetadata().getVaultIndex()+ " from " + Bukkit.getPlayer(vault.getMetadata().getOwnerUUID()).getName());
-        }
+        vaults.remove(index);
     }
-    public File getFile(){
-        return new PlayerConfiguration(this.uuid).getFile();
+    public void removeVaultIfMatches(int index, Vault vault){
+        if (vaults.containsKey(index) && vaults.get(index).equals(vault)){
+            vaults.remove(index,vault);
+        }
     }
 
     @Override
@@ -123,13 +93,11 @@ public class PlayerData{
 
         PlayerData that = (PlayerData) o;
 
-        return new EqualsBuilder().append(uuid, that.uuid).append(this.vaults,that.vaults).isEquals();
+        return new EqualsBuilder().append(playerUUID, that.playerUUID).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(uuid).append(this.vaults).toHashCode();
+        return new HashCodeBuilder(17, 37).append(playerUUID).toHashCode();
     }
-
-
 }

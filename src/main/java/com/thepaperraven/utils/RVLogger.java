@@ -1,4 +1,4 @@
-package com.thepaperraven;
+package com.thepaperraven.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
