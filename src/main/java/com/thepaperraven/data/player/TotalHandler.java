@@ -1,4 +1,4 @@
-package com.thepaperraven.ai.player;
+package com.thepaperraven.data.player;
 
 import org.bukkit.Material;
 

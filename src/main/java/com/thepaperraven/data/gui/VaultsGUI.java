@@ -1,13 +1,14 @@
-package com.thepaperraven.ai.gui;
+package com.thepaperraven.data.gui;
 
-import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.ai.vault.Vault;
+import com.thepaperraven.data.player.PlayerData;
+import com.thepaperraven.data.vault.Vault;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -36,7 +37,7 @@ public class VaultsGUI implements InventoryHolder {
     }
 
     @Override
-    public Inventory getInventory() {
+    public @NotNull Inventory getInventory() {
         Inventory inv = Bukkit.createInventory(this, 54, guiName);
 
         int startIndex = currentPage * 45;

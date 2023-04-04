@@ -1,9 +1,8 @@
 package com.thepaperraven.config;
 
+import com.thepaperraven.data.vault.Vault;
 import lombok.Getter;
 import org.bukkit.NamespacedKey;
-
-import static com.thepaperraven.ResourceVaults.getPlugin;
 
 /**
  * Contains all the NameSpacedKeys required in the ResourceVaults plugin!
@@ -24,14 +23,10 @@ public class VaultKeys {
      * The owning UUID key of the VaultInstance/Vault classes.
      */
     @Getter
-    private static final NamespacedKey ownerKey= new NamespacedKey(getPlugin(), "owner_id");
+    private static final NamespacedKey ownerKey= Vault.UUID;
     @Getter
-    private static final NamespacedKey materialTypeKey= new NamespacedKey(getPlugin(), "vault_material_type");
+    private static final NamespacedKey materialTypeKey= Vault.MATERIAL;
     @Getter
-    private static final NamespacedKey indexKey= new NamespacedKey(getPlugin(), "vault_index");
-    @Getter
-    private static final NamespacedKey signsKey = new NamespacedKey(getPlugin(),"vault_has_sign");
-    @Getter
-    private static final NamespacedKey createdDateKey = new NamespacedKey(getPlugin(),"vault_created_date");
+    private static final NamespacedKey indexKey= Vault.INDEX;
 
 }

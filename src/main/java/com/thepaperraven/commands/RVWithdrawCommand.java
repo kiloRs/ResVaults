@@ -1,6 +1,6 @@
 package com.thepaperraven.commands;
 
-import com.thepaperraven.ai.player.PlayerDataMathHandler;
+import com.thepaperraven.data.player.PlayerDataMathHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -12,11 +12,10 @@ import org.jetbrains.annotations.NotNull;
 public class RVWithdrawCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be run by a player.");
             return true;
         }
-        Player player = (Player) sender;
         if (args.length != 2) {
             player.sendMessage(ChatColor.RED + "Usage: /rvwithdraw <material> <amount>");
             return true;

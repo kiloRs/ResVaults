@@ -1,7 +1,8 @@
 package com.thepaperraven.listeners;
 
 import com.thepaperraven.ResourceVaults;
-import com.thepaperraven.VaultManager;
+import com.thepaperraven.data.player.PlayerData;
+import com.thepaperraven.events.VaultCreateEvent;
 import lombok.Getter;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,15 +23,39 @@ public class PlayerDataFileHandler implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLeave(PlayerQuitEvent e){
-        VaultManager.savePlayerVaults(e.getPlayer());
+        PlayerData playerData = new PlayerData(e.getPlayer().getUniqueId());
+        ResourceVaults.getPlayerDataManager().savePlayerData(playerData);
         ResourceVaults.log("LEAVE: Saving Player Data...");
     }
 
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent e){
-        VaultManager.loadPlayerVaults(e.getPlayer());
+        PlayerData playerData = new PlayerData(e.getPlayer().getUniqueId());
+        playerData.getConfig().save();
+        ResourceVaults.getPlayerDataManager().loadPlayer(e.getPlayer());
         ResourceVaults.error("JOIN: Loading Player Data....");
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST,ignoreCancelled = false)
+    public void onCreatePre(VaultCreateEvent e){
+        if (e.isCancelled()){
+            ResourceVaults.error("Failed to accept vault creation metadata!");
+            return;
+        }
+        if (!e.getPlayer().hasPermission("rv.create") || !e.getPlayer().isOp()){
+            e.getPlayer().sendMessage("Insufficient Permissions!");
+            e.setCancelled(true);
+            return;
+        }
+    }
+    @EventHandler(priority = EventPriority.MONITOR,ignoreCancelled = false)
+    public void onCreatePost(VaultCreateEvent e){
+        if (e.isCancelled()){
+            ResourceVaults.error("Failed to accept vault creation metadata!");
+            return;
+        }
+        ResourceVaults.error("Creating Vault for " + e.getPlayer().getName() + " as " + e.getIndex());
     }
 
 

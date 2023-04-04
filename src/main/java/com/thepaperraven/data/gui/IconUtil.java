@@ -1,4 +1,4 @@
-package com.thepaperraven.ai.gui;
+package com.thepaperraven.data.gui;
 
 import com.thepaperraven.ResourceVaults;
 import org.bukkit.ChatColor;
@@ -26,7 +26,7 @@ public class IconUtil {
             return null;
         }
 
-        Material material = Material.getMaterial(iconSection.getString("material"));
+        Material material = Material.getMaterial(iconSection.getString("material",ResourceVaults.getConfiguration().getDefaultVaultMaterial().name()));
         if (material == null) {
             ResourceVaults.getPlugin().getLogger().warning("Invalid material for icon " + iconName + ": " + iconSection.getString("material"));
             return null;

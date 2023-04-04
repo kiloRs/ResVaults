@@ -1,6 +1,6 @@
 package com.thepaperraven.commands;
 
-import com.thepaperraven.ai.player.PlayerDataMathHandler;
+import com.thepaperraven.data.player.PlayerDataMathHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.CommandExecutor;
@@ -11,20 +11,23 @@ import org.jetbrains.annotations.NotNull;
 public class RVDepositCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, org.bukkit.command.@NotNull Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be run by a player.");
             return true;
         }
-        Player player = (Player) sender;
         if (args.length != 2) {
             player.sendMessage(ChatColor.RED + "Usage: /rvdeposit <material> <amount>");
             return true;
         }
-        Material material;
+        Material material = null;
         try {
-            material = Material.valueOf(args[0].toUpperCase());
+            material = Material.matchMaterial(args[0].toUpperCase());
         } catch (IllegalArgumentException e) {
             player.sendMessage(ChatColor.RED + "Invalid material.");
+            return true;
+        }
+        if (material == null){
+            player.sendMessage("No Material Found by Name [" + args[0] + "]!");
             return true;
         }
         int amount;

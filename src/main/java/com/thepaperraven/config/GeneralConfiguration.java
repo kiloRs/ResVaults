@@ -1,9 +1,7 @@
 package com.thepaperraven.config;
 
-import com.thepaperraven.ContainerType;
-import com.thepaperraven.utils.RVLogger;
 import com.thepaperraven.ResourceVaults;
-import lombok.Getter;
+import lombok.Data;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -15,7 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
+@Data
 public class GeneralConfiguration {
 
     private String PREFIX = ChatColor.GRAY + "[" + ChatColor.YELLOW + "ResourceVaults" + ChatColor.GRAY + "] ";
@@ -25,16 +23,16 @@ public class GeneralConfiguration {
     private static final String ALLOWED_MATERIALS_PATH = "allowed-materials";
     private static final String SIGN_TYPE_PATH = "default-sign-type";
     private static final String VAULT_MATERIAL = "default-vault-material";
-    private static final String SIGN_TEXT_COLOR_PATH = "sign-text-color";
-    private static final String CONTAINER_TYPES_PATH = "container-types";
+    private static final String SIGN_TEXT_COLOR_PATH = "sign.text-color";
+    private static final String SIGN_TEXT_GLOW = "sign.text-glow";
     private static final String ADMIN_PERMISSION_PATH = "admin-permission";
 
     private final List<Material> allowedMaterials;
     private Material defaultSignType;
     private final ChatColor signTextColor;
-    private static final List<ContainerType> containerTypes = new ArrayList<>();
     private final String adminPermission;
     private final Material defaultVaultMaterial;
+    private boolean signsGlow;
 
     public GeneralConfiguration(ConfigurationSection config) {
         if (config.isList(ALLOWED_MATERIALS_PATH)) {
@@ -54,16 +52,10 @@ public class GeneralConfiguration {
             this.defaultSignType = Material.OAK_WALL_SIGN;
         }
 
+        this.signsGlow = config.getBoolean(SIGN_TEXT_GLOW,false);
         this.signTextColor = ChatColor.valueOf(config.getString(SIGN_TEXT_COLOR_PATH, "BLACK"));
         this.defaultVaultMaterial = Material.matchMaterial(config.getString(VAULT_MATERIAL,Material.STONE.name().toUpperCase()));
-        List<String> list = config.getStringList(CONTAINER_TYPES_PATH);
-        for (String s : list) {
-            ContainerType containerType = ContainerType.fromString(s);
-            if (containerType == null){
-                continue;
-            }
-            containerTypes.add(containerType);
-        }
+
 
         this.adminPermission = config.getString(ADMIN_PERMISSION_PATH, "rv.admin");
 
@@ -82,17 +74,16 @@ public class GeneralConfiguration {
     public ChatColor getSignTextColor() {
         return signTextColor;
     }
-
-    public List<ContainerType> getContainerTypes() {
-        return containerTypes;
+    public boolean doSignsGlow(){
+        return signsGlow;
     }
 
     public String getAdminPermission() {
         return adminPermission;
     }
 
-    public boolean doesPlayerHave(Player player) {
-        return player.hasPermission(adminPermission);
+    public static boolean doesPlayerHave(Player player) {
+        return player.hasPermission(ResourceVaults.getConfiguration().getAdminPermission());
     }
     public void save() {
         // Save allowed materials
@@ -112,17 +103,10 @@ public class GeneralConfiguration {
         // Save admin permission
         config.set("general.admin-permission", adminPermission);
 
-        // Save container types
-        List<String> containerTypeNames = new ArrayList<>();
-        for (ContainerType containerType : ContainerType.values()) {
-            containerTypeNames.add(containerType.name());
-        }
-        config.set("general.container-types", containerTypeNames);
-
         // Save the YAML configuration to file
         try {
             config.save(new File(ResourceVaults.getPlugin().getDataFolder(),"config.yml"));
-            RVLogger.getInstance().log(4,"Saving Config.YML of the RV plugin!");
+            ResourceVaults.getLogger("Saving Fresh Configurations!");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -1,6 +1,6 @@
 package com.thepaperraven.config;
 
-import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.data.player.PlayerData;
 import com.thepaperraven.ResourceVaults;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Material;

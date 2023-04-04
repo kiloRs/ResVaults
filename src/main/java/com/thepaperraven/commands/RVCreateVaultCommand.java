@@ -1,7 +1,8 @@
 package com.thepaperraven.commands;
 
-import com.thepaperraven.ai.vault.Vault;
-import com.thepaperraven.events.VaultCreateEvent;
+import com.thepaperraven.data.player.PlayerData;
+import com.thepaperraven.data.vault.Vault;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -13,6 +14,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
+import static com.thepaperraven.data.vault.Vault.loadFromPDC;
+import static com.thepaperraven.utils.InventoryUtil.isValidMaterial;
+
 public class RVCreateVaultCommand implements CommandExecutor {
     private final Plugin plugin;
 
@@ -21,18 +25,22 @@ public class RVCreateVaultCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be executed by a player.");
             return true;
         }
-        if (args.length != 1) {
+        if (args.length < 1) {
             player.sendMessage("Usage: /rvcreate <material>");
             return true;
         }
         Material material = Material.matchMaterial(args[0]);
         if (material == null) {
             player.sendMessage("Invalid material.");
+            return true;
+        }
+        if (!isValidMaterial(material)){
+            player.sendMessage(ChatColor.RED +"This is not a valid material!");
             return true;
         }
 
@@ -44,24 +52,22 @@ public class RVCreateVaultCommand implements CommandExecutor {
         if (!(block.getState() instanceof Container container)){
             return true;
         }
-        if (Vault.isVault(container)) {
-            player.sendMessage("This container is already registered as a vault.");
+
+        Vault loadedFromPDC = loadFromPDC(block);
+        if (loadedFromPDC != null){
+            player.sendMessage("Cannot make a vault out of this, already part of a vault!");
             return true;
         }
 
-        Vault vault = null;
-        VaultCreateEvent event = new VaultCreateEvent(player, block.getLocation(), material);
-        plugin.getServer().getPluginManager().callEvent(event);
-        if (event.isCancelled()) {
-            return true;
+        try {
+            PlayerData playerData = PlayerData.get(player.getUniqueId());
+            if (playerData.registerVault(block.getLocation(),material)) {
+                player.sendMessage("Vault was registered as " + (playerData.getNextIndex() -1));
+                return true;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        vault = Vault.createVault(event);
-        if (vault != null) {
-            player.sendMessage("Vault created.");
-        } else {
-            player.sendMessage("Failed to register vault. Please try again later.");
-        }
-        return true;
+        return false;
     }
 }

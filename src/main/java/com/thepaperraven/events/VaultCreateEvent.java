@@ -1,47 +1,42 @@
 package com.thepaperraven.events;
 
-import com.thepaperraven.ai.player.PlayerData;
+import com.thepaperraven.data.vault.Vault;
+import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-public class VaultCreateEvent extends Event implements Cancellable {
+@Getter
+public class VaultCreateEvent extends VaultChangeEvent {
     private static final HandlerList HANDLERS = new HandlerList();
 
     private final Player player;
     private final Location location;
     private final Material material;
+    private final boolean doesSignExist;
     private boolean cancelled = false;
-    private final int nextIndex;
+    private final int index;
 
-    public VaultCreateEvent(Player player, Location location, Material material) {
+    public VaultCreateEvent(Player player, Location location, Material material, int actual) {
+        super(new Vault(actual,player.getUniqueId(),material, ((Chest) location.getBlock().getState())));
         this.player = player;
-        this.location = location;
-        this.material = material;
-        this.nextIndex = PlayerData.get(player.getUniqueId()).getVaults().size() + 1;
+        this.location = getVault().getChest().getLocation();
+        this.material = getVault().getMaterial();
+        this.index = getVault().getIndex();
+        this.doesSignExist = getVault().hasSign();
     }
 
-    public Player getPlayer() {
-        return player;
+    public void setSignDirection(BlockFace face){
+        getVault().signDirection = face;
     }
 
-    public Location getLocation() {
-        return location;
+    public void createSign(){
+        getVault().createVaultsSign(false);
     }
-
-    public Material getMaterial() {
-        return material;
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
     @Override
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
@@ -56,7 +51,4 @@ public class VaultCreateEvent extends Event implements Cancellable {
         return HANDLERS;
     }
 
-    public int getNextIndex() {
-        return nextIndex;
-    }
 }

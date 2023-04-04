@@ -1,7 +1,7 @@
 package com.thepaperraven.commands;
 
-import com.thepaperraven.ai.player.PlayerData;
-import com.thepaperraven.ai.vault.Vault;
+import com.thepaperraven.data.player.PlayerData;
+import com.thepaperraven.data.vault.Vault;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -50,7 +50,7 @@ public class RVDeleteVaultCommand implements CommandExecutor {
             return true;
         }
 
-        PlayerData.get(player.getUniqueId()).removeVault(index);
+        PlayerData.get(player.getUniqueId()).unregisterVault(index);
 
         player.sendMessage(PREFIX + ChatColor.GREEN + "Vault deleted successfully!");
 
